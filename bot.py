@@ -1,15 +1,11 @@
 # https://discordpy.readthedocs.io/en/latest/index.html
-# https://pypi.org/project/rss-parser/
-
 import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from rss_parser import Parser
-from requests import get
+
 
 load_dotenv()
-xml = get("https://shadowkingdom.org/forums/ban-mute-appeals.15.rss")
 
 intents = discord.Intents.default()
 intents.message_content = True
