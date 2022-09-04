@@ -1,12 +1,11 @@
 # https://feedparser.readthedocs.io/en/latest/
 import feedparser
-import time
 import re
 import html
 from copy import deepcopy
 
 
-class SkFetchRss:
+class FetchRss:
     _lastThreads = []
     threads = []
     newThreads = []
@@ -29,9 +28,6 @@ class SkFetchRss:
         tags = r"<[^<]+?>"
         parsed = re.sub(tags, "", content)
 
-        # Unescape any HTML escaped characters
-        parsed = html.unescape(parsed)
-
         # Remove title suffix in content
         parsed = parsed.replace("\n\n" + title, "")
         return parsed
@@ -46,8 +42,10 @@ class SkFetchRss:
         parsed = html.unescape(parsed)
 
         # Get the input after the field about who made the punishment
-        name = ""
-        return name
+        lines = list(filter(None, parsed.splitlines()))
+        for line in lines:
+            if line.startswith("Staff member who issued your punishment:"):
+                return line.replace("Staff member who issued your punishment:", "").strip()
 
 
     def _getThreads(self):
@@ -86,17 +84,15 @@ class SkFetchRss:
                                     })
             post += 1
 
+
     def run(self):
-        while True:
-            self._getThreads()
+        self._getThreads()
 
-            if len(self.threads) > len(self._lastThreads):
-                print("New threads: %d" % (len(self.threads) - len(self._lastThreads)))
-                
-                self.newThreads.clear()
-                for item in self.threads:
-                    if item not in self._lastThreads:
-                        self.newThreads.append(item)
-
-            # Scan for new posts every 10 minutes
-            time.sleep(600)
+        if len(self.threads) > len(self._lastThreads):            
+            self.newThreads.clear()
+            for item in self.threads:
+                if item not in self._lastThreads:
+                    self.newThreads.append(item)
+            return len(self.threads) - len(self._lastThreads)
+        else:
+            return 0
