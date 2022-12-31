@@ -25,13 +25,14 @@ async def on_ready():
     fetcher.start()
 
 
-@bot.tree.command(name="sync", description="Bot Owner only")
+@bot.tree.command(name="sync", description="Bot owner only")
 async def sync(interaction: discord.Interaction):
-    if interaction.user.id == os.getenv("OWNER_ID"):
+    if interaction.user.id == int(os.getenv("OWNER_ID")):
+        await interaction.response.defer(ephemeral=True)
         await bot.tree.sync()
-        print("Command tree synced")
+        await interaction.followup.send("Command tree synced")
     else:
-        await interaction.response.send_message("You must be the owner to use this command!")
+        await interaction.response.send_message("You must be the owner to use this command!", ephemeral=True)
 
 
 @bot.tree.command(name="viewthreads", description="View important forum threads")
