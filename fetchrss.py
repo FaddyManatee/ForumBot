@@ -93,12 +93,12 @@ class FetchRss:
         self._threads.clear()
 
         for item in self._server_feed.entries:
-            thread = requests.get(item.id, cookies=self._cookie)
+            thread = requests.get(item.id.replace("http", "https"), cookies=self._cookie)
             soup = BeautifulSoup(thread.content, "html.parser")
             content = str(soup.find("blockquote"))
             content = self._parse(content)
 
-            self._threads.append({"link": item.id,
+            self._threads.append({"link": thread.url,
                                   "type": "server-appeal",
                                   "title": item.title,
                                   "author_id": self._get_author_id(soup, item.author),
@@ -111,12 +111,12 @@ class FetchRss:
                                 })
 
         for item in self._discord_feed.entries:
-            thread = requests.get(item.id, cookies=self._cookie)
+            thread = requests.get(item.id.replace("http", "https"), cookies=self._cookie)
             soup = BeautifulSoup(thread.content, "html.parser")
             content = str(soup.find("blockquote"))
             content = self._parse(content)
 
-            self._threads.append({"link": item.id,
+            self._threads.append({"link": thread.url,
                                   "type": "discord-appeal",
                                   "title": item.title,
                                   "author_id": self._get_author_id(soup, item.author),
@@ -132,12 +132,12 @@ class FetchRss:
         post = 0
         for item in self._staffapp_feed.entries:
             if post != 0:
-                thread = requests.get(item.id, cookies=self._cookie)
+                thread = requests.get(item.id.replace("http", "https"), cookies=self._cookie)
                 soup = BeautifulSoup(thread.content, "html.parser")
                 content = str(soup.find("blockquote"))
                 content = self._parse(content)
 
-                self._threads.append({"link": item.id,
+                self._threads.append({"link": thread.url,
                                       "type": "staff-app",
                                       "title": item.title,
                                       "author_id": self._get_author_id(soup, item.author),

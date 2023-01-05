@@ -3,6 +3,7 @@ import os
 import discord
 import requests
 import paginator
+import botlog
 from fetchrss import FetchRss
 from skbans import get_most_recent_punishment
 from difflib import get_close_matches
@@ -118,6 +119,9 @@ async def sync(interaction: discord.Interaction):
     discord.app_commands.Choice(name="application", value=4)
 ])
 async def viewThreads(interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
+    await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
+                              interaction.command.name + " " + type.name)
+
     if type.name == "new":
         threads = new_embeds
     
@@ -153,7 +157,7 @@ async def on_message(message):
 @tasks.loop(minutes=30.0)
 async def fetcher():
     detected = rss.run()
-    print(detected)
+    await botlog.new_threads(detected)
 
     if (detected > 0):
         channel = bot.get_channel(int(os.getenv("CHANNEL_ID")))
