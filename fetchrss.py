@@ -8,21 +8,21 @@ from bs4 import BeautifulSoup
 
 
 class FetchRss:
-    _lastThreads = []
+    _last_threads = []
     _threads = []
-    _newThreads = []
+    _new_threads = []
 
-    def __init__(self, cookie, agent):
-        self.cookie = {"cookie": cookie}
+    def __init__(self, cookie):
+        self._cookie = {"cookie": cookie}
 
         # Three pages of interest
-        self.serverFeed = feedparser.parse("https://shadowkingdom.org/forums/ban-mute-appeals.15.rss", 
-                                            request_headers=self.cookie)
+        self._server_feed = feedparser.parse("https://shadowkingdom.org/forums/ban-mute-appeals.15.rss", 
+                                            request_headers=self._cookie)
 
-        self.discordFeed = feedparser.parse("https://shadowkingdom.org/forums/discord-ban-mute-appeals.49.rss", 
-                                             request_headers=self.cookie)
+        self._discord_feed = feedparser.parse("https://shadowkingdom.org/forums/discord-ban-mute-appeals.49.rss", 
+                                             request_headers=self._cookie)
 
-        self.staffappFeed = feedparser.parse("https://shadowkingdom.org/forums/staff-applications.43.rss")
+        self._staffapp_feed = feedparser.parse("https://shadowkingdom.org/forums/staff-applications.43.rss")
 
 
     def _parse(self, content):
@@ -34,30 +34,30 @@ class FetchRss:
         return parsed
 
     
-    def _formatAuthor(self, author):
+    def _format_author(self, author):
         author = author.lower()
         author = author.replace(" ", "-")
         return author
 
 
     # https://stackoverflow.com/a/48600278
-    def _findNumber(self, text, c):
+    def _find_number(self, text, c):
         return re.findall(r"%s(\d+)" % c, text)
 
 
-    def _getAuthorID(self, soup, author):
+    def _get_author_id(self, soup, author):
         authors = soup.find_all(class_="username")
         
-        author = self._formatAuthor(author)
+        author = self._format_author(author)
         author = author + "."
 
         for entry in authors:
             if author in str(entry):
-                id = self._findNumber(str(entry), ".")[0]
+                id = self._find_number(str(entry), ".")[0]
                 return id
 
 
-    def _getAuthorAvatar(self, soup):
+    def _get_author_avatar(self, soup):
         author_avatars = soup.find_all("img")
         author_avatars.remove(author_avatars[0])  # Remove hidden img avatar of auth user
         
@@ -66,23 +66,7 @@ class FetchRss:
                 return "https://shadowkingdom.org/{}".format(entry["src"])
 
 
-    def _getMod(self, content):
-        # Get the input after the field about who made the punishment
-        lines = iter(list(filter(None, content.splitlines())))
-        for line in lines:
-            if line.startswith("Staff member who issued your punishment:"):
-                header = line.replace("Staff member who issued your punishment:", "").strip()
-
-                # Try the next line if the data was not inline with header 
-                if header.isspace() or len(header) == 0:
-                    l = next(lines)
-                    header = l.replace("Staff member who issued your punishment:", "").strip()
-                    
-                return header
-        return None
-
-
-    def _getPlayer(self, content, status):
+    def _get_player(self, content, status):
         sentence = ""
         if status == "banned":
             sentence = "Your in-game name:"
@@ -105,11 +89,11 @@ class FetchRss:
 
 
     def _fetch(self):
-        self._lastThreads.extend(self._threads)
+        self._last_threads.extend(self._threads)
         self._threads.clear()
 
-        for item in self.serverFeed.entries:
-            thread = requests.get(item.id, cookies=self.cookie)
+        for item in self._server_feed.entries:
+            thread = requests.get(item.id, cookies=self._cookie)
             soup = BeautifulSoup(thread.content, "html.parser")
             content = str(soup.find("blockquote"))
             content = self._parse(content)
@@ -117,18 +101,17 @@ class FetchRss:
             self._threads.append({"link": item.id,
                                   "type": "server-appeal",
                                   "title": item.title,
-                                  "author_id": self._getAuthorID(soup, item.author),
+                                  "author_id": self._get_author_id(soup, item.author),
                                   "author": item.author,
-                                  "author_formatted": self._formatAuthor(item.author),
-                                  "author_avatar": self._getAuthorAvatar(soup),
+                                  "author_formatted": self._format_author(item.author),
+                                  "author_avatar": self._get_author_avatar(soup),
                                   "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                  "player": self._getPlayer(content, "banned"),
-                                  "moderator": self._getMod(content),
+                                  "player": self._get_player(content, "banned"),
                                   "content": content
                                 })
 
-        for item in self.discordFeed.entries:
-            thread = requests.get(item.id, cookies=self.cookie)
+        for item in self._discord_feed.entries:
+            thread = requests.get(item.id, cookies=self._cookie)
             soup = BeautifulSoup(thread.content, "html.parser")
             content = str(soup.find("blockquote"))
             content = self._parse(content)
@@ -136,20 +119,20 @@ class FetchRss:
             self._threads.append({"link": item.id,
                                   "type": "discord-appeal",
                                   "title": item.title,
-                                  "author_id": self._getAuthorID(soup, item.author),
+                                  "author_id": self._get_author_id(soup, item.author),
                                   "author": item.author,
-                                  "author_formatted": self._formatAuthor(item.author),
-                                  "author_avatar": self._getAuthorAvatar(soup),
+                                  "author_formatted": self._format_author(item.author),
+                                  "author_avatar": self._get_author_avatar(soup),
                                   "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                  "player": self._getPlayer(content, "banned"),
+                                  "player": self._get_player(content, "banned"),
                                   "content": content
                                 })
 
         # Skipping the first thread/entry in staff applications. It is a guide
         post = 0
-        for item in self.staffappFeed.entries:
+        for item in self._staffapp_feed.entries:
             if post != 0:
-                thread = requests.get(item.id, cookies=self.cookie)
+                thread = requests.get(item.id, cookies=self._cookie)
                 soup = BeautifulSoup(thread.content, "html.parser")
                 content = str(soup.find("blockquote"))
                 content = self._parse(content)
@@ -157,45 +140,45 @@ class FetchRss:
                 self._threads.append({"link": item.id,
                                       "type": "staff-app",
                                       "title": item.title,
-                                      "author_id": self._getAuthorID(soup, item.author),
+                                      "author_id": self._get_author_id(soup, item.author),
                                       "author": item.author,
-                                      "author_formatted": self._formatAuthor(item.author),
-                                      "author_avatar": self._getAuthorAvatar(soup),
+                                      "author_formatted": self._format_author(item.author),
+                                      "author_avatar": self._get_author_avatar(soup),
                                       "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                      "player": self._getPlayer(content, "applying"),
+                                      "player": self._get_player(content, "applying"),
                                       "content": content
                                     })
             post += 1
 
     
-    def getServerThreads(self):
+    def get_server_threads(self):
         return [thread for thread in self._threads if thread["type"] == "server-appeal"]
 
 
-    def getDiscordThreads(self):
+    def get_discord_threads(self):
         return [thread for thread in self._threads if thread["type"] == "discord-appeal"]
 
 
-    def getApplicationThreads(self):
+    def get_application_threads(self):
         return [thread for thread in self._threads if thread["type"] == "staff-app"]
 
     
-    def getNewThreads(self):
-        return self._newThreads
+    def get_new_threads(self):
+        return self._new_threads
 
 
-    def getOpenThreads(self):
+    def get_open_threads(self):
         return self._threads
 
 
     def run(self):
         self._fetch()
 
-        if len(self._threads) > len(self._lastThreads):            
-            self._newThreads.clear()
+        if len(self._threads) > len(self._last_threads):            
+            self._new_threads.clear()
             for item in self._threads:
-                if item not in self._lastThreads:
-                    self._newThreads.append(item)
-            return len(self._threads) - len(self._lastThreads)
+                if item not in self._last_threads:
+                    self._new_threads.append(item)
+            return len(self._threads) - len(self._last_threads)
         else:
             return 0
