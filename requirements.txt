@@ -1,0 +1,6 @@
+git+https://github.com/FaddyManatee/embed-pagination
+beautifulsoup4==4.11.1
+discord.py==2.1.0
+feedparser==6.0.10
+python-dotenv==0.21.0
+requests==2.28.1
