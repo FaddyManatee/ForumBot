@@ -4,9 +4,9 @@ import discord
 import requests
 import paginator
 import botlog
+import re
 from fetchrss import FetchRss
 from skbans import get_most_recent_punishment
-from difflib import get_close_matches
 from math import floor
 from datetime import datetime as dt
 from discord import app_commands
@@ -24,6 +24,7 @@ bot = commands.Bot(command_prefix="sudo ", intents=intents, help_command=None,
 
 # If bot stops working, check if cookies in .env need updating first
 rss = FetchRss(os.getenv("COOKIE"))
+seperator = "---------------------------------\n"
 members = []
 new_embeds = []
 appeal_embeds = []
@@ -32,6 +33,7 @@ application_embeds = []
 
 async def generate_embeds(threads):
     embeds = []
+    staff = []
 
     for thread in threads:
         embed = discord.Embed(title=thread["title"])
@@ -48,7 +50,7 @@ async def generate_embeds(threads):
 
 
         if thumbnail.status_code != 200:
-            embed.set_thumbnail(url="https://minotar.net/helm/vvvvvvvvvvvv.png")
+            embed.set_thumbnail(url=os.getenv("UKN_IGN"))
         else:
             embed.set_thumbnail(url=thumbnail.url)
 
@@ -61,8 +63,10 @@ async def generate_embeds(threads):
             embed.color = discord.Color.from_str("#ff2828")
 
             uuid = requests.get("https://api.mojang.com/users/profiles/minecraft/{}".format(thread["player"])).json()["id"]
-            punishment = get_most_recent_punishment(uuid)
-            embed.add_field(name="Staff member", value=punishment["moderator"])
+            punishment = get_most_recent_punishment(uuid, members)
+            staff.append(punishment["mod_discord"])
+
+            embed.add_field(name="Staff member", value=discord.utils.escape_markdown(punishment["moderator"]))
             embed.add_field(name="Punishment", value=punishment["type"])
             embed.add_field(name="Reason", value=punishment["reason"], inline=False)
 
@@ -89,7 +93,7 @@ async def generate_embeds(threads):
 
         embeds.append(embed)
     
-    return embeds
+    return embeds, list(set(staff))
 
 
 @bot.event
@@ -97,7 +101,9 @@ async def on_ready():
     print("Logged in as {0.user}".format(bot))
     global members
     members = [member for member in bot.get_all_members() if not member.bot]
-    fetcher.start()
+
+    if fetcher.is_running() == False:
+        fetcher.start()
 
 
 @bot.tree.command(name="sync", description="Bot owner only")
@@ -108,6 +114,15 @@ async def sync(interaction: discord.Interaction):
         await interaction.followup.send("Command tree synced")
     else:
         await interaction.response.send_message("You must be the owner to use this command!", ephemeral=True)
+
+
+@bot.tree.command(name="changelog", description="Show ForumBot version changelog")
+async def changelog(interaction: discord.Interaction):
+    embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title="ForumBot changelog")
+    embed.description = open("changelog.txt").read() 
+    embed.set_footer(text="Version {} by FaddyManatee".format(re.findall(r"\d\.\d\.\d", embed.description)[-1]),
+             icon_url="https://i.postimg.cc/br0cHz36/Logo.png")
+    await interaction.response.send_message(embed=embed)
 
 
 @bot.tree.command(name="viewthreads", description="View important forum threads that still need to be closed")
@@ -147,9 +162,30 @@ async def viewThreads(interaction: discord.Interaction, type: discord.app_comman
 async def on_message(message):
     if message.author == bot.user:
         return
+    
+    if "forgor" in message.content.lower():
+        await message.add_reaction("\U0001f480")
 
-    if message.content == "Do you read me?":
-        await message.channel.send("Affirmative")
+    if  message.mention_everyone and "meeting time" in message.content.lower():
+        await message.add_reaction("<:whygod:1061614468234235904>")
+        return
+
+    if "sus" in message.content.lower().split(" "):
+        await message.channel.send("<:sus:1061610886365712464>")
+        return
+
+    if "puzzle" in message.content.lower():
+        await message.reply(os.getenv("PUZZLE_GIF"))
+        return
+
+    if message.content.lower() == "hello?":
+        await message.channel.send(":musical_note: Is it me you're looking for? :musical_note:")
+        return
+
+    parsed = re.search(r"\s*get c\s*", message.content.lower())
+    if parsed is not None:
+        await message.reply(os.getenv("WHY_GIF"))
+        return
 
     await bot.process_commands(message)
 
@@ -165,32 +201,53 @@ async def fetcher():
         count = len([thread for thread in threads if thread["type"] == "staff-app"])
 
         global new_embeds, appeal_embeds, application_embeds
-        new_embeds = await generate_embeds(rss.get_new_threads())
+        new_embeds, _ = await generate_embeds(rss.get_new_threads())
 
         appeals = rss.get_server_threads()
         appeals.extend(rss.get_discord_threads())
-        appeal_embeds = await generate_embeds(appeals)
+        appeal_embeds, staff = await generate_embeds(appeals)
 
-        application_embeds = await generate_embeds(rss.get_application_threads())
+        application_embeds, _ = await generate_embeds(rss.get_application_threads())
         
-        staff = []
-
-        seperator = "-------------------------------------\n"
         ping_staff = ""
         if len(staff) > 0:
-            ping_staff = "The following staff have a new appeal to respond to:\n"
             for member in staff:
-                ping_staff += "<@{}>\n".format(member.id)
+                if member is not None:
+                    ping_staff += "<@{}>\n".format(member.id)
 
             if len(ping_staff) > 0:
-                ping_staff + seperator
+                await channel.send(ping_staff)
 
-        await channel.send(":incoming_envelope: ***You've got mail !***\n" +
-                        seperator + ping_staff +
-                        ":scales: {} new appeals\n".format(len(threads) - count) +
-                        ":pencil: {} new applications\n".format(count) +
-                        seperator +
-                        ":bulb: Use `/viewthreads new` to see them")
+        embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
+                        title=":incoming_envelope: ***You've got mail !***")
+
+        embed.description = seperator + \
+                            ":scales: {} new appeal(s)\n".format(len(threads) - count) + \
+                            ":pencil: {} new application(s)\n".format(count) + \
+                            seperator + \
+                            ":bulb: Use `/viewthreads new`"
+        
+        await channel.send(embed=embed)
+
+        if reminder.is_running() == False:
+            reminder.start()
+
+
+@tasks.loop(hours=168)
+async def reminder():
+    channel = bot.get_channel(int(os.getenv("CHANNEL_ID")))
+    threads = rss.get_open_threads()
+
+    if len(threads) > 0 and reminder.current_loop > 0:
+
+        embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
+                title=":books: ***Threads need attention***")
+
+        embed.description = seperator + ":thread: There are **{}** open thread(s)\n".format(len(threads)) + \
+                            seperator + \
+                            ":bulb: Use `/viewthreads all`"
+
+        await channel.send(embed=embed)
 
 
 bot.run(os.getenv("TOKEN"))
