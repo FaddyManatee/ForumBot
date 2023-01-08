@@ -119,7 +119,7 @@ async def sync(interaction: discord.Interaction):
 @bot.tree.command(name="changelog", description="Show ForumBot version changelog")
 async def changelog(interaction: discord.Interaction):
     embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title="ForumBot changelog")
-    embed.description = open("changelog.txt").read() 
+    embed.description = open("changelog.md").read() 
     embed.set_footer(text="Version {} by FaddyManatee".format(re.findall(r"\d\.\d\.\d", embed.description)[-1]),
              icon_url="https://i.postimg.cc/br0cHz36/Logo.png")
     await interaction.response.send_message(embed=embed)
@@ -130,7 +130,7 @@ async def changelog(interaction: discord.Interaction):
 @app_commands.choices(type=[
     discord.app_commands.Choice(name="new", value=1),
     discord.app_commands.Choice(name="all", value=2),
-    discord.app_commands.Choice(name="appeals", value=3),
+    discord.app_commands.Choice(name="appeal", value=3),
     discord.app_commands.Choice(name="application", value=4)
 ])
 async def viewThreads(interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
@@ -143,7 +143,7 @@ async def viewThreads(interaction: discord.Interaction, type: discord.app_comman
     elif type.name == "all":
         threads = appeal_embeds + application_embeds
 
-    elif type.name == "appeals":
+    elif type.name == "appeal":
         threads = appeal_embeds
 
     elif type.name == "application":
