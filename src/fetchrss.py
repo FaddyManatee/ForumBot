@@ -3,6 +3,7 @@ import feedparser
 import re
 import requests
 import html
+from math import floor
 from datetime import datetime as dt
 from bs4 import BeautifulSoup
 
@@ -182,3 +183,17 @@ class FetchRss:
             return len(self._threads) - len(self._last_threads)
         else:
             return 0
+
+
+# Calculate the time elapsed since a thread was posted.
+def time_elapsed(thread):
+    hours_elapsed = (dt.now() - thread["time"]).total_seconds() / 3600
+
+    if hours_elapsed >= 24:
+        return str(floor(hours_elapsed / 24)) + " days ago"
+    
+    elif hours_elapsed < 1:
+        return str(floor(hours_elapsed * 60)) + " minutes ago"
+
+    else:
+        return str(round(hours_elapsed, 1)) + " hours ago"
