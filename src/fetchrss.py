@@ -18,10 +18,19 @@ class FetchRss:
 
         # Three pages of interest
         self._server_feed = feedparser.parse("https://shadowkingdom.org/forums/ban-mute-appeals.15.rss", 
-                                            request_headers=self._cookie)
+                                             request_headers=self._cookie)
 
         self._discord_feed = feedparser.parse("https://shadowkingdom.org/forums/discord-ban-mute-appeals.49.rss", 
-                                             request_headers=self._cookie)
+                                              request_headers=self._cookie)
+
+        self._player_report_feed = feedparser.parse("https://shadowkingdom.org/forums/report-a-player.10.rss", 
+                                                    request_headers=self._cookie)
+
+        self._staff_report_feed = feedparser.parse("https://shadowkingdom.org/forums/report-a-staff.45.rss", 
+                                                   request_headers=self._cookie)
+
+        self._bug_report_feed = feedparser.parse("https://shadowkingdom.org/forums/report-a-staff.45.rss", 
+                                                 request_headers=self._cookie)
 
         self._staffapp_feed = feedparser.parse("https://shadowkingdom.org/forums/staff-applications.43.rss")
 
@@ -67,26 +76,26 @@ class FetchRss:
                 return "https://shadowkingdom.org/{}".format(entry["src"])
 
 
-    def _get_player(self, content, status):
-        sentence = ""
-        if status == "banned":
-            sentence = "Your in-game name:"
-        elif status == "applying":
-            sentence = "Your current IGN:"
-
-        # Get the input after the field about who was punished
+    def _get_player(self, content, prefix):
+        # Get the input after the field about who is making the report
         lines = iter(list(filter(None, content.splitlines())))
         for line in lines:
-            if line.startswith(sentence):
-                header = line.replace(sentence, "").strip()
+            if line.startswith(prefix):
+                header = line.replace(prefix, "").strip()
 
                 # Try the next line if the data was not inline with header 
                 if header.isspace() or len(header) == 0:
                     l = next(lines)
-                    header = l.replace(sentence, "").strip()
+                    header = l.replace(prefix, "").strip()
 
                 return header
         return None
+
+
+    def _get_datetime(self, time_string):
+        # Remove timezone information and get time object from string.
+        datetime = dt.strptime(time_string[:-6], "%a, %d %b %Y %H:%M:%S")
+        return datetime
 
 
     def _fetch(self):
@@ -106,8 +115,8 @@ class FetchRss:
                                   "author": item.author,
                                   "author_formatted": self._format_author(item.author),
                                   "author_avatar": self._get_author_avatar(soup),
-                                  "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                  "player": self._get_player(content, "banned"),
+                                  "time": self._get_datetime(item.published),
+                                  "player": self._get_player(content, "Your in-game name:"),
                                   "content": content
                                 })
 
@@ -124,10 +133,28 @@ class FetchRss:
                                   "author": item.author,
                                   "author_formatted": self._format_author(item.author),
                                   "author_avatar": self._get_author_avatar(soup),
-                                  "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                  "player": self._get_player(content, "banned"),
+                                  "time": self._get_datetime(item.published),
+                                  "player": self._get_player(content, "Your discord name (example#1111):"),
                                   "content": content
                                 })
+
+        # for item in self._player_report_feed.entries:
+        #     thread = requests.get(item.id.replace("http", "https"), cookies=self._cookie)
+        #     soup = BeautifulSoup(thread.content, "html.parser")
+        #     content = str(soup.find("blockquote"))
+        #     content = self._parse(content)
+
+        #     self._threads.append({"link": thread.url,
+        #                           "type": "player-report",
+        #                           "title": item.title,
+        #                           "author_id": self._get_author_id(soup, item.author),
+        #                           "author": item.author,
+        #                           "author_formatted": self._format_author(item.author),
+        #                           "author_avatar": self._get_author_avatar(soup),
+        #                           "time": self._get_datetime(item.published),
+        #                           "player": self._get_player(content, "Your name (In game/Discord/Forum):"),
+        #                           "content": content
+        #                         })
 
         # Skipping the first thread/entry in staff applications. It is a guide
         post = 0
@@ -145,23 +172,23 @@ class FetchRss:
                                       "author": item.author,
                                       "author_formatted": self._format_author(item.author),
                                       "author_avatar": self._get_author_avatar(soup),
-                                      "time": dt.strptime(item.published[:-6], "%a, %d %b %Y %H:%M:%S"),
-                                      "player": self._get_player(content, "applying"),
+                                      "time": self._get_datetime(item.published),
+                                      "player": self._get_player(content, "Your current IGN:"),
                                       "content": content
                                     })
             post += 1
 
     
-    def get_server_threads(self):
-        return [thread for thread in self._threads if thread["type"] == "server-appeal"]
-
-
-    def get_discord_threads(self):
-        return [thread for thread in self._threads if thread["type"] == "discord-appeal"]
+    def get_appeal_threads(self):
+        return [thread for thread in self._threads if "appeal" in thread["type"]]
 
 
     def get_application_threads(self):
         return [thread for thread in self._threads if thread["type"] == "staff-app"]
+
+
+    def get_report_threads(self):
+        return [thread for thread in self._threads if "report" in thread["type"]]
 
     
     def get_new_threads(self):
