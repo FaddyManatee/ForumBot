@@ -52,7 +52,7 @@ class Threads(commands.Cog):
             # Set the embed thumbnail to the thread author's player head.
             thumbnail = requests.get("https://minotar.net/helm/{}.png".format(thread["player"]))
             if thumbnail.status_code != 200:
-                embed.set_thumbnail(url=os.getenv("UKN_IGN"))
+                embed.set_thumbnail("https://minotar.net/helm/vvvvvvvvvvvv.png")
             else:
                 embed.set_thumbnail(url=thumbnail.url)
 
@@ -200,7 +200,7 @@ class Threads(commands.Cog):
         # Triggered on any occurrence of the word "puzzle"
         parsed = re.search(r"\s*puzzle($|[ .,!?\-'])", message.content.lower())
         if parsed is not None:
-            await message.reply(os.getenv("PUZZLE_GIF"))
+            await message.reply("https://media.tenor.com/PPWUxTjZarsAAAAd/he-he-he-yup-yup.gif")
             return
 
         # Triggered if message text is "hello?" exactly.
@@ -211,7 +211,7 @@ class Threads(commands.Cog):
         # Triggered on any occurrence of the words "get c".
         parsed = re.search(r"\s*get c($|[ .,!?\-'])", message.content.lower())
         if parsed is not None:
-            await message.reply(os.getenv("WHY_GIF"))
+            await message.reply("https://cdn.discordapp.com/emojis/837504400200040498.gif")
             return
 
         await self.bot.process_commands(message)
@@ -245,6 +245,7 @@ class Threads(commands.Cog):
             embed.description = self.seperator + \
                                 ":scales: {} new appeal(s)\n".format(len(threads) - count) + \
                                 ":pencil: {} new application(s)\n".format(count) + \
+                                ":man_detective: 0 new report(s)\n" + \
                                 self.seperator + \
                                 ":bulb: Use `/viewthreads new`"
             

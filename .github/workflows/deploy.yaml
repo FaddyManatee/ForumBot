@@ -1,0 +1,45 @@
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+name: LinuxContainerWorkflow
+
+jobs:
+    # test:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        steps:
+        # checkout the repo
+        - name: "Checkout GitHub Action"
+          uses: actions/checkout@main
+
+        - name: "Login via Azure CLI"
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+        - name: "Build and push image"
+          uses: azure/docker-login@v1
+          with:
+            login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+            username: ${{ secrets.REGISTRY_USERNAME }}
+            password: ${{ secrets.REGISTRY_PASSWORD }}
+        - run: >
+            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
+            --build-arg TOKEN=${{ secrets.TOKEN }} --build-arg COOKIE=${{ secrets.COOKIE }}
+            --build-arg CHANNEL_ID=${{ secrets.CHANNEL_ID }} --build-arg OWNER_ID=${{ secrets.OWNER_ID }}
+            --build-arg SK_USER=${{ secrets.SK_USER }}
+            --build-arg SK_PASS=${{ secrets.SK_PASS }} &&
+            docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
+        # - name: "Deploy to Azure Container Instances"
+        #   uses: "azure/aci-deploy@v1"
+        #   with:
+        #     resource-group: ${{ secrets.RESOURCE_GROUP }}
+        #     dns-name-label: ${{ secrets.RESOURCE_GROUP }}${{ github.run_number }}
+        #     image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
+        #     registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        #     registry-username: ${{ secrets.REGISTRY_USERNAME }}
+        #     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+        #     name: forumbot-aci
+        #     location: "uk south"

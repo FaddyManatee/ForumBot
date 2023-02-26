@@ -1,4 +1,4 @@
 *.log
+*.exe
 .env
-test.py
 __pycache__
