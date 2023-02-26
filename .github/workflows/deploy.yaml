@@ -32,14 +32,14 @@ jobs:
             --build-arg SK_USER=${{ secrets.SK_USER }}
             --build-arg SK_PASS=${{ secrets.SK_PASS }} &&
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
-        # - name: "Deploy to Azure Container Instances"
-        #   uses: "azure/aci-deploy@v1"
-        #   with:
-        #     resource-group: ${{ secrets.RESOURCE_GROUP }}
-        #     dns-name-label: ${{ secrets.RESOURCE_GROUP }}${{ github.run_number }}
-        #     image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
-        #     registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-        #     registry-username: ${{ secrets.REGISTRY_USERNAME }}
-        #     registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-        #     name: forumbot-aci
-        #     location: "uk south"
+        - name: "Deploy to Azure Container Instances"
+          uses: "azure/aci-deploy@v1"
+          with:
+            resource-group: ${{ secrets.RESOURCE_GROUP }}
+            dns-name-label: ${{ secrets.RESOURCE_GROUP }}${{ github.run_number }}
+            image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/discord:${{ github.sha }}
+            registry-login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+            registry-username: ${{ secrets.REGISTRY_USERNAME }}
+            registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+            name: forumbot-aci
+            location: "uk south"
