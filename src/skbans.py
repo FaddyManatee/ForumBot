@@ -7,17 +7,17 @@ from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 
-def get_most_recent_punishment(uuid, staff_list):
+def get_most_recent_punishment(uuid: str, staff_list: list[Member]):
     record = requests.get("https://bans.shadowkingdom.org/history.php?uuid={}".format(uuid),
                            auth=HTTPBasicAuth(os.getenv("SK_USER"), os.getenv("SK_PASS")))
 
     soup = BeautifulSoup(record.content, "html.parser")
     punishments = soup.find_all("tr")
 
+    # Only interested in the player's most recent ban.
     for item in punishments:
         if "Kick" in item.text or "Warning" in item.text:
             punishments.remove(item)
@@ -27,6 +27,7 @@ def get_most_recent_punishment(uuid, staff_list):
 
     staff_member = None
     for member in staff_list:
+        # Attempt to find the closest matching staff discord username from the IGN.
         if SequenceMatcher(None, re.sub(r"\s\(.*?\)", "", member.display_name), moderator).ratio() >= 0.5:
             staff_member = member
             break

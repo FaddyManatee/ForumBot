@@ -1,6 +1,6 @@
 git+https://github.com/FaddyManatee/embed-pagination
 beautifulsoup4==4.11.1
-discord.py==2.1.0  # then -> py -3 -m pip install -U discord.py[voice] or similar
+discord.py==2.2.2  # then -> py -3 -m pip install -U discord.py[voice] or similar
 feedparser==6.0.10
 nbswave==0.3.0
 python-dotenv==0.21.0

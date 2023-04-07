@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # Load cogs
 async def load():
-    await bot.load_extension("threads")
+    await bot.load_extension("fetcher")
     await bot.load_extension("nbsplayer")
 
 

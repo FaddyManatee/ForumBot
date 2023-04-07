@@ -1,15 +1,11 @@
 # syntax=docker/dockerfile:1
 FROM python:3.10.0
 
-WORKDIR /setup
-
-COPY requirements.txt requirements.txt
+COPY . /deployment
+WORKDIR /deployment
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 RUN pip3 install -U discord.py[voice]
-
-COPY . /deployment
-WORKDIR /deployment
 
 ARG TOKEN
 ARG COOKIE

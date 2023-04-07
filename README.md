@@ -10,16 +10,24 @@ feed and reports details related to them.
 
 
 ## Preview
-### New forum threads found
+### Notifies when new forum threads are found
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707111479922830/image.png"><br/>
 
-### Weekly open thread reminder
+### Sends weekly open thread reminders
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061710985968238763/image.png"><br/>
 
-### /viewthreads appeal
+### /viewthreads `new`
+Lists all newly found threads.
+
+### /viewthreads `all`
+Lists all open threads.
+
+### /viewthreads `appeal`
+Lists all open ban or mute appeals.
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061708918868414515/image.png"><br/>
 
-### /viewthreads application
+### /viewthreads `staffapp`
+Lists all open staff applications.
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707976253132881/image.png"><br/>
 
 ## NBS music player
