@@ -27,7 +27,7 @@ Lists all open ban or mute appeals.
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061708918868414515/image.png"><br/>
 
 ### /viewthreads `staffapp`
-Lists all open staff applications.
+Lists all open staff applications.<br/>
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707976253132881/image.png"><br/>
 
 ## NBS music player
