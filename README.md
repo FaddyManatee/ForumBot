@@ -6,15 +6,6 @@ feed and reports details related to them.
 ## Dependencies
 + ffmpeg and ffprobe binaries are required in the root folder. [Install them here](https://ffbinaries.com/downloads).
 + For embed navigaton to function, install [embed-pagination](https://github.com/FaddyManatee/embed-pagination).
-+ There is a list out of bounds exception in the [nbswave](https://github.com/Bentroen/nbswave) dependency, 
-requiring `nbswave/nbs.py:17` to be replaced with:
-```
-for note in self.notes:
-    if note.layer >= len(self.layers):
-        layer = self.layers[0]
-    else:
-        layer = self.layers[note.layer]
-```
 
 ## Preview
 ### Notifies when new forum threads are found
@@ -30,11 +21,11 @@ Lists all newly found threads.
 Lists all open threads.
 
 ### /viewthreads `appeal`
-Lists all open ban or mute appeals.
+Lists all open ban or mute appeals.<br/>
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061708918868414515/image.png"><br/>
 
-### /viewthreads `staffapp`<br/>
-Lists all open staff applications.
+### /viewthreads `staffapp`
+Lists all open staff applications.<br/>
 <img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707976253132881/image.png"><br/>
 
 ## NBS music player
