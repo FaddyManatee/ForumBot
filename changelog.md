@@ -2,9 +2,12 @@
 - Initial release.
 
 **1.1.0**
-- Added note block song music player.
+- Added Note Block Song (NBS) Player.
 
 **1.1.1**
 - Refactored bot code.
 - General improvements.
 - Updated dependencies.
+
+**1.1.2**
+- NBS Player now independent from ForumBot

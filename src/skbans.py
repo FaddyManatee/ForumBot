@@ -17,7 +17,7 @@ def get_most_recent_punishment(uuid: str, staff_list: list[Member]):
     soup = BeautifulSoup(record.content, "html.parser")
     punishments = soup.find_all("tr")
 
-    # Only interested in the player's most recent ban.
+    # Only interested in the player's most recent ban/mute.
     for item in punishments:
         if "Kick" in item.text or "Warning" in item.text:
             punishments.remove(item)

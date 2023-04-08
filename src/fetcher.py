@@ -1,4 +1,3 @@
-# https://discordpy.readthedocs.io/en/latest/index.html
 import os
 import re
 import discord
@@ -6,15 +5,19 @@ import botlog
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
-from paginator import Paginator
 from dotenv import load_dotenv
+from paginator import Paginator
 from fetchrss import FetchRss
 from threads import Thread, Appeal, Application
 
 load_dotenv()
 
 
-# If bot stops working, check if cookies in .env need updating first
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Fetcher(bot))
+
+
+# If bot stops working, check if cookies in .env need updating first.
 class Fetcher(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot        
@@ -227,7 +230,3 @@ class Fetcher(commands.Cog):
                             ":bulb: Use `/viewthreads all`"
 
         await channel.send(embed=embed)
-
-
-async def setup(bot):
-    await bot.add_cog(Fetcher(bot))

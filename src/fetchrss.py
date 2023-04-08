@@ -70,7 +70,6 @@ class FetchRss:
         self._last_threads = []
         self._threads = []
         self._new_threads = []
-
         self._cookie = {"cookie": cookie}
 
         # Three pages of interest

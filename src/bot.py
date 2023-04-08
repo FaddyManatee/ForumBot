@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load cogs
 async def load():
     await bot.load_extension("fetcher")
-    await bot.load_extension("nbsplayer")
+    await bot.load_extension("player")
 
 
 load_dotenv()
