@@ -1,18 +1,19 @@
-import os
-import re
-import requests
 from requests.auth import HTTPBasicAuth
 from discord import Member
 from difflib import SequenceMatcher
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+import os
+import re
+import requests
+
 
 load_dotenv()
 
 
 def get_most_recent_punishment(uuid: str, staff_list: list[Member]):
     record = requests.get("https://bans.shadowkingdom.org/history.php?uuid={}".format(uuid),
-                           auth=HTTPBasicAuth(os.getenv("SK_USER"), os.getenv("SK_PASS")))
+                           auth=HTTPBasicAuth(os.getenv("BANS_USER"), os.getenv("BANS_PASS")))
 
     soup = BeautifulSoup(record.content, "html.parser")
     punishments = soup.find_all("tr")
