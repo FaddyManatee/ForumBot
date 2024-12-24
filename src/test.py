@@ -1,7 +1,9 @@
-from skparser import *
+from parser import *
 
 
-result = parse_appeals()
+result = get_appeals()
+
+print(result)
 
 for i in result:
     print("===========================NEW THREAD==============================")

@@ -1,26 +1,37 @@
+"""
+forum.py
+
+Describes the structure of forum related objects that appear on shadowkingdom.org
+
+Threads (of types: Application, Appeal, and Report)
+Posts
+"""
+
+
 from abc import ABC, abstractmethod
-from enum import Enum
 from datetime import datetime as dt
-from discord import Embed, Member, utils, Color
+from discord import Embed, Color
+from enum import Enum
 from math import floor
-from skbans import get_most_recent_punishment
 import requests
+
+import bans
 
 
 class ReportType(Enum):
-    Player = 1
-    Staff  = 2
-    Bug    = 3
+    PLAYER  = 1
+    STAFF   = 2
+    BUG     = 3
 
 
 class Post:
     def __init__(self,
-                 id: str,                      # ID of post.
+                 id: str,                      # ID of the post.
                  content: str,                 # Post content.
-                 author: str,                  # Name of post author.
+                 author: str,                  # Name of the post author.
                  author_url: str,              # URL for author's page.
                  avatar: str,                  # URL for author's avatar.
-                 time: dt) -> None:            # Date and time when published.
+                 time: dt) -> None:            # Date and time when post was published.
         
         self._id         = id
         self._content    = content
@@ -74,8 +85,8 @@ class Post:
 
 class Thread(ABC):
     def __init__(self,
-                 url: str,                      # URL to thread.
-                 title: str,                    # Title of thread.
+                 url: str,                      # URL of the thread.
+                 title: str,                    # Title of the thread.
                  posts: list[Post]) -> None:    # List of posts in the thread.
         
         self._url = url
@@ -90,21 +101,11 @@ class Thread(ABC):
                                icon_url=posts[0].get_author_avatar(),
                                url=posts[0].get_author_URL())
 
-        # Set the embed thumbnail to the author's player head.
-        # thumb = requests.get("https://minotar.net/helm/{}.png".format(ign))
-
-        # if thumb.status_code != 200:
-        #     # Display fallback player image.
-        #     self._embed.set_thumbnail("https://i.postimg.cc/PfgQtxvC/unknown-ign.png")
-        # else:
-        #     self._embed.set_thumbnail(url=thumb.url)
-        
-        # self._embed.add_field(name="Player", value=utils.escape_markdown(self._ign))
         self._embed.set_footer(text=posts[0].time_elapsed())
 
 
     @abstractmethod
-    def to_embed(self) -> tuple[Embed, Member]:
+    def to_embed(self) -> Embed:
         pass
 
 
@@ -121,36 +122,48 @@ class Thread(ABC):
 
 
 class Application(Thread):
-    def __init__(self, 
-                 url: str, 
-                 title: str,
-                 posts: list[Post]) -> None:
+    def __init__(self, url: str, title: str, posts: list[Post]) -> None:
         super().__init__(url, title, posts)
 
 
-    def to_embed(self) -> tuple[Embed, Member]:
-        self._embed.description = "Staff application\n[Click here to view]( {} )".format(self._url)
+    def to_embed(self) -> Embed:
+        self._embed.description = "Staff Application\n[Click here to view]({})".format(self._url)
         self._embed.color = Color.from_str("#00f343")
         return (self._embed, None)
 
 
 class Appeal(Thread):
-    def __init__(self, 
-                 url: str, 
-                 title: str,
-                 posts: list[Post]) -> None:
+    def __init__(self, url: str, title: str, posts: list[Post], ign: str) -> None:
         super().__init__(url, title, posts)
-
-
-    def to_embed(self, members: list[Member]) -> tuple[Embed, Member]:        
-        self._embed.description = "Punishment appeal\n[Click here to view]( {} )".format(self._url)
-        self._embed.color = Color.from_str("#ff2828")
+        self._ign = ign
 
         # Get the punished player's uuid to find their most recent punishment.
         uuid = requests.get("https://api.mojang.com/users/profiles/minecraft/{}".format(self._ign)).json()["id"]
-        punishment = get_most_recent_punishment(uuid, members)
+        self._punishment = bans.get_most_recent_punishment(uuid)
+        self._moderator = "<@{}>".format(self._punishment["mod_discord"])
 
-        self._embed.add_field(name="Staff member", value=utils.escape_markdown(punishment["moderator"]))
-        self._embed.add_field(name="Punishment", value=punishment["type"])
-        self._embed.add_field(name="Reason", value=punishment["reason"], inline=False)
-        return (self._embed, punishment["mod_discord"])
+    
+    def get_moderator(self) -> str:
+        return self._moderator
+
+
+    def to_embed(self) -> Embed:        
+        self._embed.description = "Punishment Appeal\n[Click here to view]({})".format(self._url)
+        self._embed.color = Color.from_str("#ff2828")
+        
+        self._embed.add_field(name="Moderator", value=self._punishment["moderator"])
+        self._embed.add_field(name="Punishment", value=self._punishment["type"])
+        self._embed.add_field(name="Reason", value=self._punishment["reason"], inline=False)
+        return self._embed
+    
+
+class Report(Thread):
+    def __init__(self, url: str, title: str, posts: list[Post], report_type: ReportType) -> None:
+        super().__init__(url, title, posts)
+        self._type = report_type
+
+
+    def to_embed(self) -> Embed:
+        self._embed.description = "{} Report\n[Click here to view]({})".format(self._type.name.lower().capitalize(), self._url)
+        self._embed.color = Color.from_str("#00f343")
+        return self._embed

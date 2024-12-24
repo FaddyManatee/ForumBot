@@ -1,14 +1,23 @@
-from discord import app_commands
+import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-from paginator import Paginator
-from skscraper import Scraper
-from skforum import *
 import os
 import re
-import discord
+
 import botlog
-import discord
+import forum
+from paginator import Paginator
+from scraper import Scraper
+
+
+"""
+bot.py
+
+Implements bot functionality.
+
+Slash commands, reactions, etc.
+"""
+
 
 load_dotenv()
 
@@ -22,23 +31,19 @@ class Bot(commands.Cog):
         self.bot = bot        
         self.scraper = Scraper(os.getenv("COOKIE"))
         self.seperator = "---------------------------------\n"
-        self.members = []
+        # self.members = []
         self.new_embeds = []
         self.report_embeds = []
         self.appeal_embeds = []
         self.application_embeds = []
 
 
-    async def generate_embeds(self, threads: list[Thread]) -> list[tuple[discord.Embed, discord.Member]]:
+    async def generate_embeds(self, threads: list[forum.Thread]) -> list[discord.Embed]:
         embeds = []
 
         for thread in threads:
-            if isinstance(thread, Appeal):
-                embeds.append(thread.to_embed(self.members))
-            else:
-                embeds.append(thread.to_embed())
+            embeds.append(thread.to_embed())
         
-        # Return the list of tuples with embed and staff member to ping.
         return embeds
 
 
@@ -46,7 +51,7 @@ class Bot(commands.Cog):
     async def on_ready(self):
         print("Logged in as {0.user}".format(self.bot))
         # Get all non-bot members.
-        self.members = [member for member in self.bot.get_all_members() if not member.bot]
+        # self.members = [member for member in self.bot.get_all_members() if not member.bot]
 
         # Start task to periodically execute Scraper.run()
         if not self.scraper_task.is_running():
@@ -54,7 +59,7 @@ class Bot(commands.Cog):
 
 
     # Sync the bot's command tree globally. Executable by the bot owner only.
-    @app_commands.command(name="sync", description="Bot owner only")
+    @discord.app_commands.command(name="sync", description="Bot owner only")
     async def sync(self, interaction: discord.Interaction):
         if interaction.user.id == int(os.getenv("OWNER_ID")):
             await interaction.response.defer(ephemeral=True)
@@ -65,7 +70,7 @@ class Bot(commands.Cog):
 
 
     # Display changelog.md in an embed.
-    @app_commands.command(name="changelog", description="Show ForumBot version changelog")
+    @discord.app_commands.command(name="changelog", description="Show ForumBot version changelog")
     async def changelog(self, interaction: discord.Interaction):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
                                   interaction.command.name)
@@ -81,9 +86,9 @@ class Bot(commands.Cog):
         await interaction.response.send_message(embed=embed)
             
 
-    @app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
-    @app_commands.describe(type="Thread type")
-    @app_commands.choices(type=[
+    @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
+    @discord.app_commands.describe(type="Thread type")
+    @discord.app_commands.choices(type=[
         discord.app_commands.Choice(name="new",      value=1),
         discord.app_commands.Choice(name="all",      value=2),
         discord.app_commands.Choice(name="appeal",   value=3),
@@ -108,10 +113,9 @@ class Bot(commands.Cog):
                 threads = self.application_embeds
         
         try:
-            # Build up a list of embed objects.
             embeds = []
             for item in threads:
-                embeds.append(item[0])
+                embeds.append(item)
 
             # Create custom buttoms to override default paginator button appearance.
             next_button = discord.ui.Button(label="\u25ba", style=discord.ButtonStyle.primary)
@@ -180,16 +184,14 @@ class Bot(commands.Cog):
 
         channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
         threads = self.scraper.get_new_threads()
-        count = len([thread for thread in threads if isinstance(thread, Application)])
+        count = len([thread for thread in threads if isinstance(thread, forum.Application)])
 
+        appeal_threads = self.scraper.get_appeal_threads()
+        to_ping = set([appeal.get_moderator() for appeal in appeal_threads])
+
+        self.appeal_embeds = await self.generate_embeds(appeal_threads)
         self.new_embeds = await self.generate_embeds(self.scraper.get_new_threads())
-        self.appeal_embeds = await self.generate_embeds(self.scraper.get_appeal_threads())
         self.application_embeds = await self.generate_embeds(self.scraper.get_application_threads())
-        
-        ping_staff = ""
-        for embed in self.appeal_embeds:
-            if embed[1] is not None:
-                ping_staff += "<@{}>\n".format(embed[1].id)
 
         embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
                         title=":incoming_envelope: ***You've got mail !***")
@@ -201,10 +203,7 @@ class Bot(commands.Cog):
                             self.seperator + \
                             ":bulb: Use `/viewthreads new`"
         
-        if len(ping_staff) > 0:
-            await channel.send(ping_staff, embed=embed)
-        else:
-            await channel.send(embed=embed)
+        await channel.send("\n".join(to_ping), embed=embed)
 
         # Start running the open thread reminder task if not already running.
         if not self.reminder.is_running():
