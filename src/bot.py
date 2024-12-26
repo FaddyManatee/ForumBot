@@ -31,7 +31,6 @@ class Bot(commands.Cog):
         self.bot = bot        
         self.scraper = Scraper(os.getenv("COOKIE"))
         self.seperator = "---------------------------------\n"
-        # self.members = []
         self.new_embeds = []
         self.report_embeds = []
         self.appeal_embeds = []
@@ -50,8 +49,6 @@ class Bot(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Logged in as {0.user}".format(self.bot))
-        # Get all non-bot members.
-        # self.members = [member for member in self.bot.get_all_members() if not member.bot]
 
         # Start task to periodically execute Scraper.run()
         if not self.scraper_task.is_running():
@@ -133,48 +130,18 @@ class Bot(commands.Cog):
             return
         
         text = message.content.lower()
-        
-        # Triggered if forgor appears in the message.
-        if "forgor" in text:
-            await message.add_reaction("\U0001f480")
-
-        # Triggered on any occurrence of the word "ham".
-        parsed = re.search(r"\s*ham($|[ .,!?\-'])", text)
-        if parsed is not None:
-            await message.add_reaction("<:ham:1061984465548742656>")
 
         # Triggered on @here or @everyone with message text containing "meeting time".
         if  message.mention_everyone and "meeting" in text:
             await message.add_reaction("<:whygod:1061614468234235904>")
-            return
 
         # Triggered on any occurrence of the substring "sus", or words "among us" or "amogus".
-        parsed = re.search(r"sus|\s*(among us|amogus)($|[ .,!?\-'])", text)
+        parsed = re.search(r"sus|\s*(among us|amogus|amongus|jerma)($|[ .,!?\-'])", text)
         if parsed is not None:
             await message.channel.send("<:sus:1061610886365712464>")
-            return
-
-        # Triggered on any occurrence of the word "puzzle"
-        parsed = re.search(r"\s*puzzle($|[ .,!?\-'])", text)
-        if parsed is not None:
-            await message.reply("https://media.tenor.com/PPWUxTjZarsAAAAd/he-he-he-yup-yup.gif")
-            return
-
-        # Triggered if message text is "hello?" exactly.
-        if text == "hello?":
-            await message.channel.send(":musical_note: Is it me you're looking for? :musical_note:")
-            return
-
-        # Triggered on any occurrence of the words "get c".
-        parsed = re.search(r"\s*get c($|[ .,!?\-'])", text)
-        if parsed is not None:
-            await message.reply("https://cdn.discordapp.com/emojis/837504400200040498.gif")
-            return
-
-        await self.bot.process_commands(message)
 
 
-    @tasks.loop(minutes=30.0)
+    @tasks.loop(minutes=5.0)
     async def scraper_task(self):
         detected = self.scraper.run()
         await botlog.new_threads(detected)

@@ -10,7 +10,7 @@ All HTML content is parsed here.
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from urllib.parse import urljoin
-import datetime as dt
+from datetime import datetime as dt
 import os
 import re
 import requests
