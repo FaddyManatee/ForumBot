@@ -30,11 +30,7 @@ class Bot(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot        
         self.scraper = Scraper(os.getenv("COOKIE"))
-        self.seperator = "---------------------------------\n"
-        self.new_embeds = []
-        self.report_embeds = []
-        self.appeal_embeds = []
-        self.application_embeds = []
+        self.seperator = "---------------------------------"
 
 
     async def generate_embeds(self, threads: list[forum.Thread]) -> list[discord.Embed]:
@@ -44,15 +40,97 @@ class Bot(commands.Cog):
             embeds.append(thread.to_embed())
         
         return embeds
+    
+
+    async def notify_new_activity(self):
+        appeals = self.scraper.get_new_appeal_threads()
+        applications = self.scraper.get_new_application_threads()
+        reports = self.scraper.get_new_report_threads()
+
+        # Collect moderators to ping.
+        to_ping = {appeal.get_moderator() for appeal in appeals}
+
+        # Prepare embed description dynamically, only adding non-zero counts
+        description_lines = []
+
+        if len(appeals) > 0:
+            word = "appeal" if len(appeals) == 1 else "appeals"
+            description_lines.append(f":scales: {len(appeals)} new {word}")
+
+        if len(applications) > 0:
+            word = "application" if len(applications) == 1 else "applications"
+            description_lines.append(f":pencil: {len(applications)} new {word}")
+
+        if len(reports) > 0:
+            word = "report" if len(reports) == 1 else "reports"
+            description_lines.append(f":man_detective: {len(reports)} new {word}")
+
+        embed_new_threads = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New threads found !***")
+        embed_new_threads.description = f"{self.seperator}\n" + "\n".join(description_lines) + f"\n{self.seperator}\n:bulb: Use `/viewthreads new`"
+
+        posts = self.scraper.get_new_posts()
+        result = ""
+
+        for thread, new_posts in posts.items():
+            result += f"**{thread.get_title()}**\n"
+            
+            for post in new_posts:
+                post_url = thread.get_url() + "#" + post.get_id()
+                result += f"[New post]({post_url}) by {post.get_author()}\n"
+
+        embed_new_posts = None
+        if result:
+            embed_new_posts = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New posts found !***")
+            embed_new_posts.description = result
+
+        # Send the notification embeds.
+        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
+        await channel.send("\n".join(to_ping), embed=embed_new_threads)
+
+        if embed_new_posts:  # Only send the "new posts" embed if there are new posts.
+            await channel.send(embed=embed_new_posts)
 
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print("Logged in as {0.user}".format(self.bot))
+    @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
+    @discord.app_commands.describe(type="Thread type")
+    @discord.app_commands.choices(type=[
+        discord.app_commands.Choice(name="all",         value=1),
+        discord.app_commands.Choice(name="appeal",      value=2),
+        discord.app_commands.Choice(name="application", value=3),
+        discord.app_commands.Choice(name="report",      value=4)
+    ])
+    async def viewThreads(self, interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
+        await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
+                                  interaction.command.name + " " + type.name)
 
-        # Start task to periodically execute Scraper.run()
-        if not self.scraper_task.is_running():
-            self.scraper_task.start()
+        embeds = None
+
+        match type.value:
+            case 1:
+                embeds = await self.generate_embeds(self.scraper.get_all_threads())
+            case 2:
+                embeds = await self.generate_embeds(self.scraper.get_appeal_threads())
+            case 3:
+                embeds = await self.generate_embeds(self.scraper.get_application_threads())
+            case 4:
+                embeds = await self.generate_embeds(self.scraper.get_report_threads())
+        
+        try:
+            # Create custom buttoms to override default paginator button appearance.
+            next_button = discord.ui.Button(label="\u25ba", style=discord.ButtonStyle.primary)
+            prev_button = discord.ui.Button(label="\u25c4", style=discord.ButtonStyle.primary)
+            
+            paginator = Paginator(
+                next_button=next_button,
+                previous_button=prev_button,
+                delete_on_timeout=True,
+                ephemeral=True
+            )
+
+            await paginator.start(interaction, embeds)
+
+        except ValueError:
+            await interaction.response.send_message("There are no open threads of type `{}` to display".format(type.name), ephemeral=True)
 
 
     # Sync the bot's command tree globally. Executable by the bot owner only.
@@ -81,47 +159,6 @@ class Bot(commands.Cog):
         embed.set_footer(text="Version {} by FaddyManatee".format(re.findall(r"\d\.\d\.\d", embed.description)[-1]),
                 icon_url="https://i.postimg.cc/br0cHz36/Logo.png")
         await interaction.response.send_message(embed=embed)
-            
-
-    @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
-    @discord.app_commands.describe(type="Thread type")
-    @discord.app_commands.choices(type=[
-        discord.app_commands.Choice(name="new",      value=1),
-        discord.app_commands.Choice(name="all",      value=2),
-        discord.app_commands.Choice(name="appeal",   value=3),
-        discord.app_commands.Choice(name="report",   value=4),
-        discord.app_commands.Choice(name="staffapp", value=5)
-    ])
-    async def viewThreads(self, interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
-        await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
-                                  interaction.command.name + " " + type.name)
-
-        threads = []
-        match type.value:
-            case 1:
-                threads = self.new_embeds
-            case 2:
-                threads = self.appeal_embeds + self.application_embeds
-            case 3:
-                threads = self.appeal_embeds
-            case 4:
-                threads = self.report_embeds
-            case 5:
-                threads = self.application_embeds
-        
-        try:
-            embeds = []
-            for item in threads:
-                embeds.append(item)
-
-            # Create custom buttoms to override default paginator button appearance.
-            next_button = discord.ui.Button(label="\u25ba", style=discord.ButtonStyle.primary)
-            prev_button = discord.ui.Button(label="\u25c4", style=discord.ButtonStyle.primary)
-            
-            await Paginator(next_button=next_button, previous_button=prev_button, 
-                            delete_on_timeout=True).start(interaction, embeds)
-        except ValueError:
-            await interaction.response.send_message("There are no open threads of type `{}` to display".format(type.name))
 
 
     @commands.Cog.listener()
@@ -141,38 +178,30 @@ class Bot(commands.Cog):
             await message.channel.send("<:sus:1061610886365712464>")
 
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print("Logged in as {0.user}".format(self.bot))
+
+        # Start task to periodically execute Scraper.run()
+        if not self.scraper_task.is_running():
+            self.scraper_task.start()
+
+
     @tasks.loop(minutes=5.0)
     async def scraper_task(self):
-        detected = self.scraper.run()
-        await botlog.new_threads(detected)
+        result = self.scraper.run()
+        new_threads = result[0]
+        new_posts = result[1]
 
-        if detected == 0:
+        await botlog.new_threads(new_threads)
+
+        if new_threads == 0 and new_posts == 0:
             return
 
-        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
-        threads = self.scraper.get_new_threads()
-        count = len([thread for thread in threads if isinstance(thread, forum.Application)])
+        if new_threads > 0:
+            await self.notify_new_activity()
 
-        appeal_threads = self.scraper.get_appeal_threads()
-        to_ping = set([appeal.get_moderator() for appeal in appeal_threads])
-
-        self.appeal_embeds = await self.generate_embeds(appeal_threads)
-        self.new_embeds = await self.generate_embeds(self.scraper.get_new_threads())
-        self.application_embeds = await self.generate_embeds(self.scraper.get_application_threads())
-
-        embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
-                        title=":incoming_envelope: ***You've got mail !***")
-
-        embed.description = self.seperator + \
-                            ":scales: {} new appeal(s)\n".format(len(threads) - count) + \
-                            ":pencil: {} new application(s)\n".format(count) + \
-                            ":man_detective: 0 new report(s)\n" + \
-                            self.seperator + \
-                            ":bulb: Use `/viewthreads new`"
-        
-        await channel.send("\n".join(to_ping), embed=embed)
-
-        # Start running the open thread reminder task if not already running.
+        # Start the open thread reminder task if not already running.
         if not self.reminder.is_running():
             self.reminder.start()
 
@@ -181,7 +210,7 @@ class Bot(commands.Cog):
     @tasks.loop(hours=168)
     async def reminder(self):
         channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
-        threads = self.scraper.get_open_threads()
+        threads = self.scraper.get_all_threads()
 
         if len(threads) == 0 or self.reminder.current_loop == 0:
             return
