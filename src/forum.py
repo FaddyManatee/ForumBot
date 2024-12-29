@@ -95,7 +95,7 @@ class Thread(ABC):
         
 
     def _create_base_embed(self):
-        self._embed = Embed(title=self._title)
+        self._embed = Embed(title=self._title, url=self._url)
 
         self._embed.set_author(name=self._posts[0].get_author(),
                                icon_url=self._posts[0].get_author_avatar(),
@@ -128,7 +128,7 @@ class Application(Thread):
 
     def to_embed(self) -> Embed:
         self._create_base_embed()
-        self._embed.description = "Staff Application\n[Click here to view]({})".format(self._url)
+        self._embed.description = "Staff Application"
         self._embed.color = Color.from_str("#00f343")
 
         return self._embed
@@ -151,10 +151,10 @@ class Appeal(Thread):
 
     def to_embed(self) -> Embed:
         self._create_base_embed()
-        self._embed.description = "Punishment Appeal\n[Click here to view]({})".format(self._url)
+        self._embed.description = "Punishment Appeal"
         self._embed.color = Color.from_str("#ff2828")
         
-        self._embed.add_field(name="Moderator", value=self._punishment["moderator"])
+        self._embed.add_field(name="Moderator", value=self._moderator)
         self._embed.add_field(name="Reason", value=self._punishment["reason"])
 
         return self._embed
@@ -168,7 +168,7 @@ class Report(Thread):
 
     def to_embed(self) -> Embed:
         self._create_base_embed()
-        self._embed.description = "{} Report\n[Click here to view]({})".format(self._type.name.lower().capitalize(), self._url)
+        self._embed.description = "{} Report".format(self._type.name.lower().capitalize())
         self._embed.color = Color.from_str("#00f343")
 
         return self._embed

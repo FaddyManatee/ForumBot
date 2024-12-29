@@ -92,7 +92,7 @@ def _appeal_thread(url):
     for item in posts_raw:
         posts.append(_parse_post(item))
 
-    return forum.Appeal(url, title.get_text(), posts, ign)
+    return forum.Appeal(url, title.get_text().strip(), posts, ign)
 #==============================================================================#
 
 
@@ -130,7 +130,7 @@ def _application_thread(url):
     for item in posts_raw:
         posts.append(_parse_post(item))
 
-    return forum.Application(url, title.get_text(), posts)
+    return forum.Application(url, title.get_text().strip(), posts)
 #==============================================================================#
 
 
