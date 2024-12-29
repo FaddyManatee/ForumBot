@@ -39,7 +39,6 @@ def get_most_recent_punishment(uuid: str):
     moderator = utils.escape_markdown(most_recent[2].find("div").get_text())
     
     return {
-        "type": most_recent[0].find("span").get_text(),
         "moderator": moderator,
         "mod_discord": _get_discord_id(moderator),
         "reason": most_recent[3].get_text()

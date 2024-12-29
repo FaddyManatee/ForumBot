@@ -155,8 +155,7 @@ class Appeal(Thread):
         self._embed.color = Color.from_str("#ff2828")
         
         self._embed.add_field(name="Moderator", value=self._punishment["moderator"])
-        self._embed.add_field(name="Punishment", value=self._punishment["type"])
-        self._embed.add_field(name="Reason", value=self._punishment["reason"], inline=False)
+        self._embed.add_field(name="Reason", value=self._punishment["reason"])
 
         return self._embed
     
