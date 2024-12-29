@@ -47,7 +47,7 @@ def _parse_post(p) -> list[forum.Post]:
         avatar = avatar.replace(" ", "%20")
     
     elif "crafatar" in avatar:
-        avatar = avatar
+        avatar = f"https://minotar.net/helm/{author.get_text()}/128.png"
 
     else:
         avatar = urljoin(BASE_URL, soup.find(class_="avatar-img").get("src"))
@@ -77,7 +77,13 @@ def get_appeals() -> list[forum.Appeal]:
 def _appeal_thread(url):
     thread = requests.get(url, headers=header)
     soup = BeautifulSoup(thread.text, "html.parser")
+
     title = soup.find(class_="forum-topic-title")
+
+    # Remove all <span> elements within the title.
+    for span in title.find_all("span"):
+        span.decompose()
+
     posts_raw = soup.find_all("div", attrs={ "id": re.compile(r"post-\d+") })
 
     posts = []
@@ -86,7 +92,7 @@ def _appeal_thread(url):
     for item in posts_raw:
         posts.append(_parse_post(item))
 
-    return forum.Appeal(url, title.get_text().strip(), posts, ign)
+    return forum.Appeal(url, title.get_text(), posts, ign)
 #==============================================================================#
 
 
@@ -110,7 +116,13 @@ def get_applications() -> list[forum.Application]:
 def _application_thread(url):
     thread = requests.get(url, headers=header)
     soup = BeautifulSoup(thread.text, "html.parser")
+
     title = soup.find(class_="forum-topic-title")
+
+    # Remove all <span> elements within the title.
+    for span in title.find_all("span"):
+        span.decompose()
+
     posts_raw = soup.find_all("div", attrs={ "id": re.compile(r"post-\d+") })
 
     posts = []
@@ -118,7 +130,7 @@ def _application_thread(url):
     for item in posts_raw:
         posts.append(_parse_post(item))
 
-    return forum.Application(url, title.get_text().strip(), posts)
+    return forum.Application(url, title.get_text(), posts)
 #==============================================================================#
 
 

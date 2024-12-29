@@ -42,13 +42,14 @@ class Bot(commands.Cog):
         return embeds
     
 
-    async def notify_new_activity(self):
+    async def notify_new_threads(self):
         appeals = self.scraper.get_new_appeal_threads()
         applications = self.scraper.get_new_application_threads()
         reports = self.scraper.get_new_report_threads()
 
         # Collect moderators to ping.
-        to_ping = {appeal.get_moderator() for appeal in appeals}
+        moderators = {appeal.get_moderator() for appeal in appeals}
+        to_ping = f"New appeals for: {', '.join(moderators)}"
 
         # Prepare embed description dynamically, only adding non-zero counts
         description_lines = []
@@ -65,9 +66,15 @@ class Bot(commands.Cog):
             word = "report" if len(reports) == 1 else "reports"
             description_lines.append(f":man_detective: {len(reports)} new {word}")
 
-        embed_new_threads = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New threads found !***")
-        embed_new_threads.description = f"{self.seperator}\n" + "\n".join(description_lines) + f"\n{self.seperator}\n:bulb: Use `/viewthreads new`"
+        embed_new_threads = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New threads found!***")
+        embed_new_threads.description = f"{self.seperator}\n" + "\n".join(description_lines) + f"\n{self.seperator}\n:bulb: Use `/viewthreads`"
 
+        # Send the notification.
+        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
+        await channel.send(to_ping, embed=embed_new_threads)
+
+
+    async def notify_new_posts(self):
         posts = self.scraper.get_new_posts()
         result = ""
 
@@ -78,17 +85,12 @@ class Bot(commands.Cog):
                 post_url = thread.get_url() + "#" + post.get_id()
                 result += f"[New post]({post_url}) by {post.get_author()}\n"
 
-        embed_new_posts = None
-        if result:
-            embed_new_posts = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New posts found !***")
-            embed_new_posts.description = result
+        embed_new_posts = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New posts found!***")
+        embed_new_posts.description = result
 
-        # Send the notification embeds.
+        # Send the notification.
         channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
-        await channel.send("\n".join(to_ping), embed=embed_new_threads)
-
-        if embed_new_posts:  # Only send the "new posts" embed if there are new posts.
-            await channel.send(embed=embed_new_posts)
+        await channel.send(embed=embed_new_posts)
 
 
     @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
@@ -99,7 +101,7 @@ class Bot(commands.Cog):
         discord.app_commands.Choice(name="application", value=3),
         discord.app_commands.Choice(name="report",      value=4)
     ])
-    async def viewThreads(self, interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
+    async def view_threads(self, interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
                                   interaction.command.name + " " + type.name)
 
@@ -134,14 +136,14 @@ class Bot(commands.Cog):
 
 
     # Sync the bot's command tree globally. Executable by the bot owner only.
-    @discord.app_commands.command(name="sync", description="Bot owner only")
+    @discord.app_commands.command(name="sync", description="Sync bot command tree")
     async def sync(self, interaction: discord.Interaction):
         if interaction.user.id == int(os.getenv("OWNER_ID")):
             await interaction.response.defer(ephemeral=True)
             await self.bot.tree.sync()
-            await interaction.followup.send("Command tree synced")
+            await interaction.followup.send("Command tree synced!")
         else:
-            await interaction.response.send_message("You must be the owner to use this command!", ephemeral=True)
+            await interaction.response.send_message("You must be the bot owner to use this command!", ephemeral=True)
 
 
     # Display changelog.md in an embed.
@@ -150,15 +152,15 @@ class Bot(commands.Cog):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
                                   interaction.command.name)
         
-        embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title="ForumBot changelog")
+        embed = discord.Embed(color=discord.Colour.from_str("#fff49c"), title="ForumBot changelog")
 
         # Get changelog.md from parent directory of this file.
         embed.description = open(os.path.join(os.path.dirname(__file__), os.path.join("..", "changelog.md"))).read()
 
         # Find latest version string and display in footer.
         embed.set_footer(text="Version {} by FaddyManatee".format(re.findall(r"\d\.\d\.\d", embed.description)[-1]),
-                icon_url="https://i.postimg.cc/br0cHz36/Logo.png")
-        await interaction.response.send_message(embed=embed)
+                icon_url="https://i.postimg.cc/jqknFJzc/83710a88d36d8c7b42e0d337cb4adc12.jpg")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
     @commands.Cog.listener()
@@ -168,11 +170,11 @@ class Bot(commands.Cog):
         
         text = message.content.lower()
 
-        # Triggered on @here or @everyone with message text containing "meeting time".
+        # Triggered on @here or @everyone with message text containing "meeting".
         if  message.mention_everyone and "meeting" in text:
             await message.add_reaction("<:whygod:1061614468234235904>")
 
-        # Triggered on any occurrence of the substring "sus", or words "among us" or "amogus".
+        # Triggered on any occurrence of sussy strings.
         parsed = re.search(r"sus|\s*(among us|amogus|amongus|jerma)($|[ .,!?\-'])", text)
         if parsed is not None:
             await message.channel.send("<:sus:1061610886365712464>")
@@ -199,7 +201,10 @@ class Bot(commands.Cog):
             return
 
         if new_threads > 0:
-            await self.notify_new_activity()
+            await self.notify_new_threads()
+
+        if new_posts > 0:
+            await self.notify_new_posts()
 
         # Start the open thread reminder task if not already running.
         if not self.reminder.is_running():
@@ -218,9 +223,13 @@ class Bot(commands.Cog):
         # Send weekly open thread reminder embed.
         embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
                 title=":books: ***Threads need attention***")
+        
+        word_1 = "is" if len(threads) == 1 else "are"
+        word_2 = "thread" if len(threads) == 1 else "threads"
 
-        embed.description = self.seperator + ":thread: There are **{}** open thread(s)\n".format(len(threads)) + \
+        embed.description = self.seperator + \
+                            f"\n:thread: There {word_1} **{len(threads)}** open {word_2}...\n" + \
                             self.seperator + \
-                            ":bulb: Use `/viewthreads all`"
+                            "\n:bulb: Use `/viewthreads all`"
 
-        await channel.send(embed=embed)
+        await channel.send(embed=embed)  # TODO: ADD MODERATORS TOO
