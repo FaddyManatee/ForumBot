@@ -96,18 +96,18 @@ class Bot(commands.Cog):
     @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
     @discord.app_commands.describe(type="Thread type")
     @discord.app_commands.choices(type=[
-        discord.app_commands.Choice(name="all",         value=1),
         discord.app_commands.Choice(name="appeal",      value=2),
         discord.app_commands.Choice(name="application", value=3),
         discord.app_commands.Choice(name="report",      value=4)
     ])
-    async def view_threads(self, interaction: discord.Interaction, type: discord.app_commands.Choice[int]):
+    async def view_threads(self, interaction: discord.Interaction, type: int = 1):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
-                                  interaction.command.name + " " + type.name)
+                                  interaction.command.name + " " + str(type))
 
         embeds = None
+        type_choices = ["all", "appeal", "application", "report"]
 
-        match type.value:
+        match type:
             case 1:
                 embeds = await self.generate_embeds(self.scraper.get_all_threads())
             case 2:
@@ -132,7 +132,7 @@ class Bot(commands.Cog):
             await paginator.start(interaction, embeds)
 
         except ValueError:
-            await interaction.response.send_message("There are no open threads of type `{}` to display".format(type.name), ephemeral=True)
+            await interaction.response.send_message(f"There are no open threads of type `{type_choices[type - 1]}` to display", ephemeral=True)
 
 
     # Sync the bot's command tree globally. Executable by the bot owner only.
