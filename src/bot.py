@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+import json
 import os
 import re
 
@@ -32,6 +33,20 @@ class Bot(commands.Cog):
         self.owner_id = os.getenv("OWNER_ID")    
         self.scraper = scraper.Scraper(os.getenv("COOKIE"))
         self.seperator = "---------------------------------"
+    
+
+    async def check_user_authorised(self, id: int) -> bool:
+        # Load the staff.json file.
+        with open("staff.json", "r") as f:
+            data = json.load(f)
+
+        # Iterate through the staff list and check if the ID matches.
+        for staff_member in data["staff"]:
+            if staff_member["discord"] == id:
+                return True
+
+        # If no match is found, return False.
+        return False
 
 
     async def generate_embeds(self, threads: list[forum.Thread]) -> list[discord.Embed]:
@@ -102,6 +117,13 @@ class Bot(commands.Cog):
         discord.app_commands.Choice(name="report",      value=4)
     ])
     async def view_threads(self, interaction: discord.Interaction, type: int = 1):
+        # Check that the user's ID is authorised to use this command.
+        authorised = await self.check_user_authorised(interaction.user.id)
+        
+        if not authorised:
+            await interaction.response.send_message("You are not authorised to use this command!", ephemeral=True)
+            return
+
         type_choices = ["all", "appeal", "application", "report"]
 
         await botlog.command_used(interaction.user.name, interaction.command.name + " " + type_choices[type - 1])
