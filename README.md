@@ -1,28 +1,30 @@
 # ForumBot
-A discord.py bot for [shadowkingdom.org](https://shadowkingdom.org) that periodically 
-retrieves new Xenforo forum threads (staff applications, punishment appeals) via RSS 
-feed and reports details related to them.
 
-## Dependencies
-+ ffmpeg and ffprobe binaries are required in the root folder. [Install them here](https://ffbinaries.com/downloads).
+**ForumBot** is a Discord bot built with `discord.py` for the community at [shadowkingdom.org](https://shadowkingdom.org). It periodically monitors the forums for new threads and posts related to staff applications, appeals, and reports, and notifies staff of relevant updates.
 
-## Preview
-### Notifies when new forum threads are found
-<img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707111479922830/image.png"><br/>
+## Features
 
-### Sends weekly open thread reminders
-<img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061710985968238763/image.png"><br/>
+### New Forum Thread Notifications
+ForumBot will send a notification whenever new threads are created concerning staff applications, appeals, or reports.
 
-### /viewthreads `new`
-Lists all newly found threads.
+![New Thread Notification](<image_url_placeholder>)
 
-### /viewthreads `all`
-Lists all open threads.
+### New Post Notifications
+The bot also sends a notification when new posts are added to existing threads.
 
-### /viewthreads `appeal`
-Lists all open ban or mute appeals.<br/>
-<img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061708918868414515/image.png"><br/>
+![New Post Notification](<image_url_placeholder>)
 
-### /viewthreads `staffapp`
-Lists all open staff applications.<br/>
-<img src="https://cdn.discordapp.com/attachments/1058799534408478801/1061707976253132881/image.png"><br/>
+### Weekly Open Thread Reminders
+ForumBot sends out weekly reminders about open threads to keep users informed.
+
+![Open Thread Reminder](<image_url_placeholder>)
+
+### Command: `/viewthreads [type=<appeal|application|report>]`
+Lists the currently open threads. Optionally, you can specify a type to filter the results:
+- `appeal` — Show appeal threads.
+- `application` — Show application threads.
+- `report` — Show report threads.
+
+Example: `/viewthreads type=appeal` will list only open appeal threads.
+
+![View Threads](<image_url_placeholder>)
