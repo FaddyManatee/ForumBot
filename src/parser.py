@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from urllib.parse import urljoin
 from datetime import datetime as dt
-import os
 import re
 import requests
 
@@ -24,10 +23,6 @@ REPORT_PLAYER_PATH = "/forum/view/16-player-reports/"
 REPORT_STAFF_PATH = "/forum/view/17-staff-reports/"
 REPORT_BUG_PATH = "/forum/view/18-bug--glitch-reports/"
 APPEAL_PATH = "/forum/view/21-ban-appeals/"
-
-
-load_dotenv()
-header = { "cookie": os.getenv("COOKIE") }
 
 
 def _parse_post(p) -> list[forum.Post]:
@@ -59,8 +54,8 @@ def _parse_post(p) -> list[forum.Post]:
 
 
 ################################# APPEAL THREADS ###############################
-def get_appeals() -> list[forum.Appeal]:
-    feed = requests.get(urljoin(BASE_URL, APPEAL_PATH), headers=header) 
+def get_appeals(cookie) -> list[forum.Appeal]:
+    feed = requests.get(urljoin(BASE_URL, APPEAL_PATH), headers=cookie) 
 
     soup = BeautifulSoup(feed.text, "html.parser")
     elements = soup.find_all(class_="forum-link")
@@ -69,13 +64,13 @@ def get_appeals() -> list[forum.Appeal]:
 
     for item in elements:
         url = urljoin(BASE_URL, item.get("href"))
-        threads.append(_appeal_thread(url))
+        threads.append(_appeal_thread(url, cookie))
     
     return threads
 
 
-def _appeal_thread(url):
-    thread = requests.get(url, headers=header)
+def _appeal_thread(url, cookie):
+    thread = requests.get(url, headers=cookie)
     soup = BeautifulSoup(thread.text, "html.parser")
 
     title = soup.find(class_="forum-topic-title")
@@ -98,8 +93,8 @@ def _appeal_thread(url):
 
 
 ############################# APPLICATION THREADS ##############################
-def get_applications() -> list[forum.Application]:
-    feed = requests.get(urljoin(BASE_URL, STAFF_APP_PATH), headers=header)
+def get_applications(cookie) -> list[forum.Application]:
+    feed = requests.get(urljoin(BASE_URL, STAFF_APP_PATH), headers=cookie)
 
     soup = BeautifulSoup(feed.text, "html.parser")
     elements = soup.find_all(class_="forum-link")
@@ -108,13 +103,13 @@ def get_applications() -> list[forum.Application]:
 
     for item in elements:
         url = urljoin(BASE_URL, item.get("href"))
-        threads.append(_application_thread(url))
+        threads.append(_application_thread(url, cookie))
     
     return threads
 
 
-def _application_thread(url):
-    thread = requests.get(url, headers=header)
+def _application_thread(url, cookie):
+    thread = requests.get(url, headers=cookie)
     soup = BeautifulSoup(thread.text, "html.parser")
 
     title = soup.find(class_="forum-topic-title")
@@ -136,10 +131,10 @@ def _application_thread(url):
 
 
 ################################ REPORT THREADS ################################
-def get_reports() -> list[forum.Report]:
-    feed_player = requests.get(urljoin(BASE_URL, REPORT_PLAYER_PATH), headers=header)
-    feed_staff = requests.get(urljoin(BASE_URL, REPORT_STAFF_PATH), headers=header)
-    feed_bug = requests.get(urljoin(BASE_URL, REPORT_BUG_PATH), headers=header)
+def get_reports(cookie) -> list[forum.Report]:
+    feed_player = requests.get(urljoin(BASE_URL, REPORT_PLAYER_PATH), headers=cookie)
+    feed_staff = requests.get(urljoin(BASE_URL, REPORT_STAFF_PATH), headers=cookie)
+    feed_bug = requests.get(urljoin(BASE_URL, REPORT_BUG_PATH), headers=cookie)
 
     soup_player = BeautifulSoup(feed_player.text, "html.parser")
     soup_staff = BeautifulSoup(feed_staff.text, "html.parser")
@@ -153,21 +148,21 @@ def get_reports() -> list[forum.Report]:
 
     for item in elements_player:
         url = urljoin(BASE_URL, item.get("href"))
-        threads.append(_report_thread(url, forum.ReportType.PLAYER))
+        threads.append(_report_thread(url, cookie, forum.ReportType.PLAYER))
 
     for item in elements_staff:
         url = urljoin(BASE_URL, item.get("href"))
-        threads.append(_report_thread(url, forum.ReportType.STAFF))
+        threads.append(_report_thread(url, cookie, forum.ReportType.STAFF))
 
     for item in elements_bug:
         url = urljoin(BASE_URL, item.get("href"))
-        threads.append(_report_thread(url, forum.ReportType.BUG))
+        threads.append(_report_thread(url, cookie, forum.ReportType.BUG))
     
     return threads
 
 
-def _report_thread(url, t):
-    thread = requests.get(url, headers=header)
+def _report_thread(url, cookie, t):
+    thread = requests.get(url, headers=cookie)
     soup = BeautifulSoup(thread.text, "html.parser")
     title = soup.find(class_="forum-topic-title")
     posts_raw = soup.find_all("div", attrs={ "id": re.compile(r"post-\d+") })

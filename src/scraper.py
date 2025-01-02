@@ -51,9 +51,9 @@ class Scraper:
         self._current_threads.clear()
         self._new_threads.clear()
 
-        self._current_threads.extend(parser.get_appeals())
-        self._current_threads.extend(parser.get_applications())
-        self._current_threads.extend(parser.get_reports())
+        self._current_threads.extend(parser.get_appeals(self._cookie))
+        self._current_threads.extend(parser.get_applications(self._cookie))
+        self._current_threads.extend(parser.get_reports(self._cookie))
 
         # Group previous and current thread objects by common URL.
         grouped_by_url = {}
