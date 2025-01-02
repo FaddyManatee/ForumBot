@@ -6,8 +6,8 @@ import re
 
 import botlog
 import forum
+import scraper
 from paginator import Paginator
-from scraper import Scraper
 
 
 """
@@ -28,8 +28,9 @@ async def setup(bot: commands.Bot):
 
 class Bot(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot        
-        self.scraper = Scraper(os.getenv("COOKIE"))
+        self.bot = bot
+        self.owner_id = os.getenv("OWNER_ID")    
+        self.scraper = scraper.Scraper(os.getenv("COOKIE"))
         self.seperator = "---------------------------------"
 
 
@@ -139,7 +140,7 @@ class Bot(commands.Cog):
     # Sync the bot's command tree globally. Executable by the bot owner only.
     @discord.app_commands.command(name="sync", description="Sync bot command tree")
     async def sync(self, interaction: discord.Interaction):
-        if interaction.user.id == int(os.getenv("OWNER_ID")):
+        if interaction.user.id == int(self.owner_id):
             await interaction.response.defer(ephemeral=True)
             await self.bot.tree.sync()
             await interaction.followup.send("Command tree synced!")
@@ -192,25 +193,31 @@ class Bot(commands.Cog):
 
     @tasks.loop(minutes=5.0)
     async def scraper_task(self):
-        result = self.scraper.run()
-        new_threads = result[0]
-        new_posts = result[1]
+        try:
+            result = self.scraper.run()
+            new_threads = result[0]
+            new_posts = result[1]
 
-        await botlog.new_threads(new_threads)
+            await botlog.new_threads(new_threads)
 
-        if new_threads == 0 and new_posts == 0:
-            return
+            if new_threads == 0 and new_posts == 0:
+                return
 
-        if new_threads > 0:
-            await self.notify_new_threads()
+            if new_threads > 0:
+                await self.notify_new_threads()
 
-        if new_posts > 0:
-            await self.notify_new_posts()
+            if new_posts > 0:
+                await self.notify_new_posts()
 
-        # Start the open thread reminder task if not already running.
-        if not self.reminder.is_running():
-            self.reminder.start()
+            # Start the open thread reminder task if not already running.
+            if not self.reminder.is_running():
+                self.reminder.start()
 
+        except scraper.InvalidCookieError:
+            await botlog.invalid_cookie()
+            channel = self.bot.get_channel(int(os.getenv("DEV_CHANNEL_ID")))
+            await channel.send(f"**Update Cookie!**\n<@{self.owner_id}>")
+            
 
     # Loops every 7 days.
     @tasks.loop(hours=168)

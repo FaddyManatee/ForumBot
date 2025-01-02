@@ -25,6 +25,17 @@ REPORT_BUG_PATH = "/forum/view/18-bug--glitch-reports/"
 APPEAL_PATH = "/forum/view/21-ban-appeals/"
 
 
+def is_cookie_valid(cookie) -> bool:
+    test_thread = "https://shadowkingdom.org/forum/topic/8-discord-ban-appeal/"
+    test = requests.get(test_thread, headers=cookie)
+
+    # Return false if cookie is no longer valid.
+    if test.status_code == 403:
+        return False
+    
+    return True
+
+
 def _parse_post(p) -> list[forum.Post]:
     soup = BeautifulSoup(str(p), "html.parser")
     id = re.search(r"post-\d+", str(soup)).group()

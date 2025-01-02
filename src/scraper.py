@@ -12,6 +12,12 @@ import forum
 import parser
 
 
+class InvalidCookieError(Exception):
+    def __init__(self, message=""):
+        self.message = message
+        super().__init__(self.message)
+
+
 class Scraper:
     def __init__(self, cookie):
         self._last_threads = []
@@ -109,6 +115,10 @@ class Scraper:
 
 
     def run(self) -> tuple[int, int]:
+        # Raise an error if the cookie is no longer valid.
+        if not parser.is_cookie_valid(self._cookie):
+            raise InvalidCookieError()
+
         self._read_forum()
 
         # Return number of new threads and posts found.
