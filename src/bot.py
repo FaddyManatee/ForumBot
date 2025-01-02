@@ -49,7 +49,7 @@ class Bot(commands.Cog):
 
         # Collect moderators to ping.
         moderators = {appeal.get_moderator() for appeal in appeals}
-        to_ping = f"New appeals for: {', '.join(moderators)}"
+        to_ping = "New appeals for:\n" + '\n'.join(moderators)
 
         # Prepare embed description dynamically, only adding non-zero counts
         description_lines = []
@@ -93,19 +93,20 @@ class Bot(commands.Cog):
         await channel.send(embed=embed_new_posts)
 
 
-    @discord.app_commands.command(name="viewthreads", description="View important forum threads that still need to be closed")
-    @discord.app_commands.describe(type="Thread type")
+    @discord.app_commands.command(name="viewthreads", description="View forum threads that still need to be closed")
+    @discord.app_commands.describe(type="Filter threads based on their type")
     @discord.app_commands.choices(type=[
         discord.app_commands.Choice(name="appeal",      value=2),
         discord.app_commands.Choice(name="application", value=3),
         discord.app_commands.Choice(name="report",      value=4)
     ])
     async def view_threads(self, interaction: discord.Interaction, type: int = 1):
+        type_choices = ["all", "appeal", "application", "report"]
+
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
-                                  interaction.command.name + " " + str(type))
+                                  interaction.command.name + " " + type_choices[type - 1])
 
         embeds = None
-        type_choices = ["all", "appeal", "application", "report"]
 
         match type:
             case 1:
@@ -152,7 +153,7 @@ class Bot(commands.Cog):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
                                   interaction.command.name)
         
-        embed = discord.Embed(color=discord.Colour.from_str("#fff49c"), title="ForumBot changelog")
+        embed = discord.Embed(color=discord.Colour.from_str("#fff49c"), title="ForumBot Changelog")
 
         # Get changelog.md from parent directory of this file.
         embed.description = open(os.path.join(os.path.dirname(__file__), os.path.join("..", "changelog.md"))).read()
@@ -222,7 +223,7 @@ class Bot(commands.Cog):
 
         # Send weekly open thread reminder embed.
         embed = discord.Embed(color=discord.Colour.from_str("#1cb4fa"),
-                title=":books: ***Threads need attention***")
+                title=":books: ***Threads need attention!***")
         
         word_1 = "is" if len(threads) == 1 else "are"
         word_2 = "thread" if len(threads) == 1 else "threads"
@@ -230,6 +231,6 @@ class Bot(commands.Cog):
         embed.description = self.seperator + \
                             f"\n:thread: There {word_1} **{len(threads)}** open {word_2}...\n" + \
                             self.seperator + \
-                            "\n:bulb: Use `/viewthreads all`"
+                            "\n:bulb: Use `/viewthreads`"
 
         await channel.send(embed=embed)  # TODO: ADD MODERATORS TOO

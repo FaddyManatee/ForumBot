@@ -104,6 +104,11 @@ class Thread(ABC):
         self._embed.set_footer(text=self._posts[0].time_elapsed())
 
 
+    # @abstractmethod
+    # def __str__(self) -> str:
+    #     return super().__str__()
+
+
     @abstractmethod
     def to_embed(self) -> Embed:
         pass
@@ -129,7 +134,7 @@ class Application(Thread):
     def to_embed(self) -> Embed:
         self._create_base_embed()
         self._embed.description = "Staff Application"
-        self._embed.color = Color.from_str("#00f343")
+        self._embed.color = Color.from_str("#43b582")
 
         return self._embed
 
@@ -152,7 +157,7 @@ class Appeal(Thread):
     def to_embed(self) -> Embed:
         self._create_base_embed()
         self._embed.description = "Punishment Appeal"
-        self._embed.color = Color.from_str("#ff2828")
+        self._embed.color = Color.from_str("#ff470f")
         
         self._embed.add_field(name="Moderator", value=self._moderator)
         self._embed.add_field(name="Reason", value=self._punishment["reason"])
@@ -169,6 +174,6 @@ class Report(Thread):
     def to_embed(self) -> Embed:
         self._create_base_embed()
         self._embed.description = "{} Report".format(self._type.name.lower().capitalize())
-        self._embed.color = Color.from_str("#00f343")
+        self._embed.color = Color.from_str("#bf0fff")
 
         return self._embed
