@@ -137,17 +137,6 @@ class Bot(commands.Cog):
             await interaction.response.send_message(f"There are no open threads of type `{type_choices[type - 1]}` to display", ephemeral=True)
 
 
-    # Sync the bot's command tree globally. Executable by the bot owner only.
-    @discord.app_commands.command(name="sync", description="Sync bot command tree")
-    async def sync(self, interaction: discord.Interaction):
-        if interaction.user.id == int(self.owner_id):
-            await interaction.response.defer(ephemeral=True)
-            await self.bot.tree.sync()
-            await interaction.followup.send("Command tree synced!")
-        else:
-            await interaction.response.send_message("You must be the bot owner to use this command!", ephemeral=True)
-
-
     # Display changelog.md in an embed.
     @discord.app_commands.command(name="changelog", description="Show ForumBot version changelog")
     async def changelog(self, interaction: discord.Interaction):
@@ -185,6 +174,10 @@ class Bot(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Logged in as {0.user}".format(self.bot))
+
+        # Sync the command tree globally on startup.
+        await self.bot.tree.sync()
+        print("Command tree synced!")
 
         # Start task to periodically execute Scraper.run()
         if not self.scraper_task.is_running():
