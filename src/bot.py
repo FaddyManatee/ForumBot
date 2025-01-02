@@ -52,7 +52,7 @@ class Bot(commands.Cog):
         moderators = {appeal.get_moderator() for appeal in appeals}
         to_ping = "New appeals for:\n" + '\n'.join(moderators)
 
-        # Prepare embed description dynamically, only adding non-zero counts
+        # Prepare embed description dynamically, only adding non-zero counts.
         description_lines = []
 
         if len(appeals) > 0:
@@ -104,8 +104,7 @@ class Bot(commands.Cog):
     async def view_threads(self, interaction: discord.Interaction, type: int = 1):
         type_choices = ["all", "appeal", "application", "report"]
 
-        await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
-                                  interaction.command.name + " " + type_choices[type - 1])
+        await botlog.command_used(interaction.user.name, interaction.command.name + " " + type_choices[type - 1])
 
         embeds = None
 
@@ -138,7 +137,7 @@ class Bot(commands.Cog):
 
 
     # Display changelog.md in an embed.
-    @discord.app_commands.command(name="changelog", description="Show ForumBot version changelog")
+    @discord.app_commands.command(name="changelog", description="View ForumBot version changelog")
     async def changelog(self, interaction: discord.Interaction):
         await botlog.command_used(interaction.user.name + "#" + interaction.user.discriminator,
                                   interaction.command.name)

@@ -156,7 +156,7 @@ class Appeal(Thread):
 
     def to_embed(self) -> Embed:
         self._create_base_embed()
-        self._embed.description = "Punishment Appeal"
+        self._embed.description = "Ban Appeal"
         self._embed.color = Color.from_str("#ff470f")
         
         self._embed.add_field(name="Moderator", value=self._moderator)
