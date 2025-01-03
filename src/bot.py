@@ -30,7 +30,9 @@ async def setup(bot: commands.Bot):
 class Bot(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.owner_id = os.getenv("OWNER_ID")    
+        self.cookie_msg_sent = False
+        self.main_channel = int(os.getenv("CHANNEL_ID"))
+        self.owner_id = int(os.getenv("OWNER_ID"))
         self.scraper = scraper.Scraper(os.getenv("COOKIE"))
         self.seperator = "---------------------------------"
     
@@ -86,7 +88,7 @@ class Bot(commands.Cog):
         embed_new_threads.description = f"{self.seperator}\n" + "\n".join(description_lines) + f"\n{self.seperator}\n:bulb: Use `/viewthreads`"
 
         # Send the notification.
-        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
+        channel = self.bot.get_channel(self.main_channel)
         await channel.send(to_ping, embed=embed_new_threads)
 
 
@@ -105,7 +107,7 @@ class Bot(commands.Cog):
         embed_new_posts.description = result
 
         # Send the notification.
-        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
+        channel = self.bot.get_channel(self.main_channel)
         await channel.send(embed=embed_new_posts)
 
 
@@ -227,16 +229,21 @@ class Bot(commands.Cog):
             if not self.reminder.is_running():
                 self.reminder.start()
 
+            self.cookie_msg_sent = False
+
         except scraper.InvalidCookieError:
             await botlog.invalid_cookie()
-            channel = self.bot.get_channel(int(os.getenv("DEV_CHANNEL_ID")))
-            await channel.send(f"**Update Cookie!**\n<@{self.owner_id}>")
+
+            if not self.cookie_msg_sent:
+                channel = self.bot.get_channel(self.main_channel)
+                self.cookie_msg_sent = True
+                await channel.send(f"Help! I can't access the forums <@{self.owner_id}>")
             
 
     # Loops every 7 days.
     @tasks.loop(hours=168)
     async def reminder(self):
-        channel = self.bot.get_channel(int(os.getenv("CHANNEL_ID")))
+        channel = self.bot.get_channel(self.main_channel)
         threads = self.scraper.get_all_threads()
 
         if len(threads) == 0 or self.reminder.current_loop == 0:

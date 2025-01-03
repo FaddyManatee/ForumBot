@@ -12,7 +12,7 @@ async def command_used(user, cmd):
 
 
 async def invalid_cookie():
-    _logger.error("Invalid cookie! Notified the bot owner to update it")
+    _logger.error("Invalid cookie! The bot owner has been notified")
 
 
 async def new_threads(count):
