@@ -1,10 +1,18 @@
+# Standard library imports.
+import os
+import json
+import re
+import base64
+
+# Third-party imports.
 import discord
 from discord.ext import commands, tasks
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization
 from dotenv import load_dotenv
-import json
-import os
-import re
 
+# Custom imports.
 import botlog
 import forum
 import scraper
@@ -33,7 +41,7 @@ class Bot(commands.Cog):
         self.cookie_msg_sent = False
         self.main_channel = int(os.getenv("CHANNEL_ID"))
         self.owner_id = int(os.getenv("OWNER_ID"))
-        self.scraper = scraper.Scraper(os.getenv("COOKIE"))
+        self.scraper = scraper.Scraper()
         self.seperator = "---------------------------------"
     
 
@@ -158,6 +166,36 @@ class Bot(commands.Cog):
 
         except ValueError:
             await interaction.response.send_message(f"There are no open threads of type `{type_choices[type - 1]}` to display", ephemeral=True)
+
+
+    @discord.app_commands.command(name="cookie", description="Update the session cookie used to access the forums")
+    @discord.app_commands.describe(data="Provide the encrypted session cookie data",
+                                   confirmation="Are you sure that the session cookie you have provided is properly encrypted?"
+    )
+    @discord.app_commands.choices(confirmation=[discord.app_commands.Choice(name="yes", value=1)])
+    async def update_cookie(self, interaction: discord.Interaction, data: str, confirmation: int):
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("You must be the bot owner to use this command!", ephemeral=True)
+            return
+        
+        # Load the bot's private key.
+        with open("private_key.pem", "rb") as f:
+            private_key = serialization.load_pem_private_key(f.read(), password=None)
+
+        # Decrypt the session cookie.
+        decrypted = private_key.decrypt(
+            base64.b64decode(data),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        # Convert decrypted data back to string.
+        result = decrypted.decode(encoding="utf-8")
+        self.scraper.set_session_cookie(result)
+        await interaction.response.send_message("The session cookie has been updated successfully!", ephemeral=True)
 
 
     # Display changelog.md in an embed.

@@ -19,7 +19,7 @@ class InvalidCookieError(Exception):
 
 
 class Scraper:
-    def __init__(self, cookie):
+    def __init__(self, cookie=""):
         self._last_threads = []
         self._current_threads = []
         self._new_threads = []
@@ -112,6 +112,10 @@ class Scraper:
 
     def get_all_threads(self) -> list[forum.Thread]:
         return self._current_threads
+    
+
+    def set_session_cookie(self, cookie: str) -> None:
+        self._cookie = { "cookie": cookie }
 
 
     def run(self) -> tuple[int, int]:
