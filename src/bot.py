@@ -39,6 +39,7 @@ class Bot(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.cookie_msg_sent = False
+        self.cookie_msg_id = ""
         self.main_channel = int(os.getenv("CHANNEL_ID"))
         self.owner_id = int(os.getenv("OWNER_ID"))
         self.scraper = scraper.Scraper()
@@ -112,7 +113,7 @@ class Bot(commands.Cog):
                 result += f"[New post]({post_url}) by {post.get_author()}\n"
 
         embed_new_posts = discord.Embed(color=discord.Colour.from_str("#1cb4fa"), title=":incoming_envelope: ***New posts found!***")
-        embed_new_posts.description = result
+        embed_new_posts.description = f"{self.seperator}\n" + result + self.seperator
 
         # Send the notification.
         channel = self.bot.get_channel(self.main_channel)
@@ -196,6 +197,7 @@ class Bot(commands.Cog):
         result = decrypted.decode(encoding="utf-8")
         self.scraper.set_session_cookie(result)
         await interaction.response.send_message("The session cookie has been updated successfully!", ephemeral=True)
+        await self.cookie_msg_id.delete()
 
 
     # Display changelog.md in an embed.
@@ -206,8 +208,7 @@ class Bot(commands.Cog):
         
         embed = discord.Embed(color=discord.Colour.from_str("#fff49c"), title="ForumBot Changelog")
 
-        # Get changelog.md from parent directory of this file.
-        embed.description = open(os.path.join(os.path.dirname(__file__), os.path.join("..", "changelog.md"))).read()
+        embed.description = open("changelog.md", "r").read()
 
         # Find latest version string and display in footer.
         embed.set_footer(text="Version {} by FaddyManatee".format(re.findall(r"\d\.\d\.\d", embed.description)[-1]),
@@ -223,7 +224,7 @@ class Bot(commands.Cog):
         text = message.content.lower()
 
         # Triggered on @here or @everyone with message text containing "meeting".
-        if  message.mention_everyone and "meeting" in text:
+        if message.mention_everyone and "meeting" in text:
             await message.add_reaction("<:whygod:1061614468234235904>")
 
         # Triggered on any occurrence of sussy strings.
@@ -275,7 +276,7 @@ class Bot(commands.Cog):
             if not self.cookie_msg_sent:
                 channel = self.bot.get_channel(self.main_channel)
                 self.cookie_msg_sent = True
-                await channel.send(f"Help! I can't access the forums <@{self.owner_id}>")
+                self.cookie_msg_id = await channel.send(f"Help! I can't access the forums <@{self.owner_id}>")
             
 
     # Loops every 7 days.
@@ -299,4 +300,4 @@ class Bot(commands.Cog):
                             self.seperator + \
                             "\n:bulb: Use `/viewthreads`"
 
-        await channel.send(embed=embed)  # TODO: ADD MODERATORS TOO
+        await channel.send(embed=embed)
